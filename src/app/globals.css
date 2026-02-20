@@ -1,26 +1,253 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================================
+   ShiftPlanner — Design System
+   Palette: #EEEBF0 (Surface), #D0F500 (Primary/Lime), White, Black
+   ============================================================ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Core palette */
+    --color-primary: #d0f500;
+    --color-primary-dark: #a8c700;
+    --color-surface: #eeebf0;
+    --color-surface-dark: #ddd9e0;
+    --color-bg: #ffffff;
+    --color-fg: #09090b;
+    --color-muted: #71717a;
+    --color-border: #e4e4e7;
+    --color-card: #ffffff;
+    --color-card-hover: #f9f9f9;
+
+    /* Sidebar */
+    --sidebar-width: 240px;
+    --sidebar-collapsed-width: 68px;
+
+    /* Shift colors */
+    --shift-morning: #3b82f6;
+    --shift-afternoon: #f59e0b;
+    --shift-night: #8b5cf6;
+    --shift-off: #d1d5db;
+    --shift-conflict: #ef4444;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-family:
+      "Inter",
+      -apple-system,
+      BlinkMacSystemFont,
+      sans-serif;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    line-height: 1.5;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a1a1aa;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Glassmorphism card */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    background: var(--color-primary);
+    color: var(--color-fg);
+    font-weight: 600;
+    padding: 0.625rem 1.5rem;
+    border-radius: 9999px;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-primary:hover {
+    background: var(--color-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(208, 245, 0, 0.4);
+  }
+
+  /* Outline button */
+  .btn-outline {
+    background: transparent;
+    color: var(--color-fg);
+    font-weight: 500;
+    padding: 0.625rem 1.5rem;
+    border-radius: 9999px;
+    border: 1.5px solid var(--color-border);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+  }
+  .btn-outline:hover {
+    background: var(--color-surface);
+    border-color: var(--color-fg);
+  }
+
+  /* Form input */
+  .input-field {
+    width: 100%;
+    padding: 0.625rem 1rem;
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    font-size: 0.875rem;
+    background: var(--color-bg);
+    color: var(--color-fg);
+    outline: none;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .input-field:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(208, 245, 0, 0.15);
+  }
+
+  /* Shift badge in calendar */
+  .shift-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .shift-badge:hover {
+    transform: scale(1.1);
+  }
+
+  /* Conflict cell */
+  .conflict-cell {
+    outline: 2px solid var(--shift-conflict);
+    outline-offset: -2px;
+    border-radius: 8px;
+    animation: conflict-pulse 2s infinite;
+  }
+
+  @keyframes conflict-pulse {
+    0%,
+    100% {
+      outline-color: var(--shift-conflict);
+    }
+    50% {
+      outline-color: rgba(239, 68, 68, 0.4);
+    }
+  }
+
+  /* Sidebar nav item */
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-muted);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .nav-item:hover {
+    background: var(--color-surface);
+    color: var(--color-fg);
+  }
+  .nav-item.active {
+    background: var(--color-primary);
+    color: var(--color-fg);
+    font-weight: 600;
+  }
+
+  /* Landing section gradient */
+  .hero-gradient {
+    background:
+      radial-gradient(
+        ellipse 80% 60% at 50% -10%,
+        rgba(208, 245, 0, 0.25) 0%,
+        transparent 70%
+      ),
+      linear-gradient(180deg, #ffffff 0%, #eeebf0 100%);
+  }
+
+  /* Feature card hover */
+  .feature-card {
+    background: white;
+    border: 1.5px solid var(--color-border);
+    border-radius: 18px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+  .feature-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 12px 40px rgba(208, 245, 0, 0.15);
+    transform: translateY(-4px);
+  }
+
+  /* Animate-in utility */
+  .animate-fade-up {
+    animation: fadeUp 0.6s ease-out forwards;
+  }
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }
