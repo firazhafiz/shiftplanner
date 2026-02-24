@@ -48,23 +48,23 @@ export async function POST(req: NextRequest) {
       hardwareId,
     );
 
-    // [DEV BYPASS] Allow testing keys in development mode
+    // [DEV BYPASS] Allow testing keys in both dev and production for initial testing
     const isTestingKey = [
       "TES-LICENSE-123",
       "TEST-LICENSE-123",
       "TESTING-123",
     ].includes(normalizedKey);
 
-    if (isTestingKey && process.env.NODE_ENV === "development") {
+    if (isTestingKey) {
       console.log(
-        "Dev Mode: Auto-validating testing key:",
+        "Testing Key detected, allowing activation:",
         normalizedKey,
         "HWID:",
         hardwareId,
       );
       return NextResponse.json({
         valid: true,
-        message: "Dev Mode: Aktivasi berhasil untuk kunci testing!",
+        message: "Aktivasi berhasil menggunakan kunci testing!",
       });
     }
 
