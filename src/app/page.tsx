@@ -1,3 +1,4 @@
+import LandingGate from "@/components/landing/LandingGate";
 import LandingNavbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import Features from "@/components/landing/Features";
@@ -8,14 +9,16 @@ import { Zap } from "lucide-react";
 
 export default function LandingPage() {
   return (
-    <main>
-      <LandingNavbar />
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <CTASection />
+    <LandingGate>
+      <main>
+        <LandingNavbar />
+        <Hero />
+        <Features />
+        <HowItWorks />
+        <CTASection />
 
-      <Footer />
-    </main>
+        <Footer />
+      </main>
+    </LandingGate>
   );
 }

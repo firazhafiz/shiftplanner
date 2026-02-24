@@ -35,8 +35,7 @@ export default function Sidebar() {
   };
 
   const confirmedLogout = async () => {
-    const db = getDB();
-    await db.authConfig.clear();
+    localStorage.setItem("sp_logged_out", "true");
     window.location.href = "/";
   };
 
@@ -45,10 +44,10 @@ export default function Sidebar() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "fixed left-0 top-0 h-screen z-50 flex flex-col",
+        "fixed left-0 top-0 h-screen z-50 hidden md:flex flex-col",
         "bg-white border-r border-(--color-border)",
         "transition-all duration-300 ease-in-out shadow-xl",
-        isHovered ? "w-[260px]" : "w-[72px]",
+        isHovered ? "w-[260px]" : "w-14 md:w-[72px]",
         "group",
       )}
     >
@@ -63,7 +62,7 @@ export default function Sidebar() {
           <img
             src="/assets/logo-dark.svg"
             alt="Logo"
-            className="w-7 h-7 object-contain"
+            className="w-6 h-6 object-contain"
           />
         </div>
         <div
@@ -95,7 +94,7 @@ export default function Sidebar() {
               className={cn(
                 "nav-item flex items-center rounded-xl transition-all duration-200 group relative h-12 w-full",
                 isActive
-                  ? "bg-(--color-primary) text-black font-bold shadow-md shadow-(--color-primary)/20"
+                  ? "bg-(--color-primary) text-(--color-primary-fg) font-bold shadow-md shadow-(--color-primary)/20"
                   : "text-(--color-muted) hover:bg-(--color-surface) hover:text-(--color-fg)",
                 isHovered ? "justify-start px-4 gap-3" : "justify-center",
               )}
@@ -103,9 +102,9 @@ export default function Sidebar() {
             >
               <Icon
                 className={cn(
-                  "w-[20px] h-[20px] shrink-0 transition-colors",
+                  "w-5 h-5 shrink-0 transition-colors",
                   isActive
-                    ? "text-black"
+                    ? "text-(--color-primary-fg)"
                     : "text-(--color-muted) group-hover:text-(--color-fg)",
                 )}
                 strokeWidth={isActive ? 2.5 : 2}
@@ -155,11 +154,11 @@ export default function Sidebar() {
       <ConfirmModal
         open={showLogoutConfirm}
         onOpenChange={setShowLogoutConfirm}
-        title="Keluar Aplikasi?"
-        description="Apakah Anda yakin ingin keluar dari aplikasi? Anda harus memasukkan kunci lisensi kembali untuk masuk ke workspace ini."
+        title="Keluar ke Landing Page?"
+        description="Anda akan diarahkan kembali ke halaman awal. Lisensi Anda akan tetap tersimpan di perangkat ini sehingga Anda tidak perlu mengetik ulang kunci lisensi."
         onConfirm={confirmedLogout}
         confirmText="Ya, Keluar"
-        variant="danger"
+        variant="primary"
       />
     </aside>
   );

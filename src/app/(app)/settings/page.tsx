@@ -3,8 +3,19 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getDB } from "@/lib/db/db";
 import { downloadBackup, parseBackupFile } from "@/lib/export/dbBackup";
-import type { BackupData, AuthConfig, AppSettings } from "@/types";
-import { Coffee, Calendar, Settings as SettingsIcon } from "lucide-react";
+import type {
+  BackupData,
+  AuthConfig,
+  AppSettings,
+  BusinessProfile,
+} from "@/types";
+import {
+  Coffee,
+  Calendar,
+  Settings as SettingsIcon,
+  Palette,
+  Building2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Shield,
@@ -29,12 +40,19 @@ export default function SettingsPage() {
   const [appSettings, setAppSettings] = useState<AppSettings>({
     shopClosedDays: [],
     minRestHours: 11,
+    primaryColor: "var(--color-primary)",
   });
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile>({
+    name: "My Workspace",
+    updatedAt: new Date(),
+  });
+  const [tempProfileName, setTempProfileName] = useState("");
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [loading, setLoading] = useState(true);
   const [restoreStatus, setRestoreStatus] = useState<string>("");
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(
     null,
   );
@@ -42,15 +60,18 @@ export default function SettingsPage() {
 
   const load = useCallback(async () => {
     const db = getDB();
-    const [auth, emps, shifts, scheds, settings] = await Promise.all([
+    const [auth, emps, shifts, scheds, settings, profile] = await Promise.all([
       db.getAuthConfig(),
       db.getAllEmployees(),
       db.getAllShiftTypes(),
       db.schedules.count(),
       db.getAppSettings(),
+      db.getBusinessProfile(),
     ]);
     setAuthConfig(auth);
     setAppSettings(settings);
+    setBusinessProfile(profile);
+    setTempProfileName(profile.name);
     setDbStats({
       employees: emps.length,
       shifts: shifts.length,
@@ -66,12 +87,10 @@ export default function SettingsPage() {
   const handleBackup = async () => {
     const db = getDB();
     const raw = await db.exportAll();
-    const settings = await db.getAppSettings();
     downloadBackup({
-      version: "1.1",
+      version: "1.2",
       exportedAt: new Date().toISOString(),
       ...raw,
-      appSettings: settings,
     });
     toast.success("Backup berhasil dicadangkan ke file JSON.");
   };
@@ -108,13 +127,21 @@ export default function SettingsPage() {
 
   const confirmedClearAll = async () => {
     const db = getDB();
-    await db.employees.clear();
-    await db.shiftTypes.clear();
-    await db.schedules.clear();
-    await db.appSettings.clear();
-    toast.success("Semua data telah dibersihkan.");
+    await db.clearAllData();
+    toast.success("Workspace telah di-reset total ke pengaturan pabrik.");
+    // Clear demo/local UI state
     await load();
     setShowClearConfirm(false);
+    // Trigger theme reset check
+    window.dispatchEvent(new CustomEvent("theme-changed"));
+  };
+
+  const confirmedDeactivate = async () => {
+    const db = getDB();
+    await db.authConfig.clear();
+    localStorage.removeItem("sp_logged_out"); // Clear session if any
+    toast.success("Aktivasi berhasil dihapus dari perangkat ini.");
+    window.location.href = "/";
   };
 
   const saveSettings = async (newSettings: AppSettings) => {
@@ -123,6 +150,10 @@ export default function SettingsPage() {
       const db = getDB();
       await db.saveAppSettings(newSettings);
       setAppSettings(newSettings);
+
+      // Dispatch theme change event for real-time reactivity
+      window.dispatchEvent(new CustomEvent("theme-changed"));
+
       toast.success("Konfigurasi bisnis berhasil disimpan.");
     } catch (e) {
       toast.error("Gagal menyimpan: " + (e as Error).message);
@@ -137,6 +168,44 @@ export default function SettingsPage() {
       : [...appSettings.shopClosedDays, day];
     saveSettings({ ...appSettings, shopClosedDays: next });
   };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) {
+      toast.error("Ukuran logo terlalu besar (Max 1MB)");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      const db = getDB();
+      await db.saveBusinessProfile({ ...businessProfile, logo: base64 });
+      setBusinessProfile((prev) => ({ ...prev, logo: base64 }));
+      toast.success("Logo berhasil diperbarui!");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveProfileName = async () => {
+    const db = getDB();
+    await db.saveBusinessProfile({ ...businessProfile, name: tempProfileName });
+    setBusinessProfile((prev) => ({ ...prev, name: tempProfileName }));
+    toast.success("Nama bisnis diperbarui!");
+  };
+
+  const presetColors = [
+    "#D0F500", // Original Neon
+    "#3B82F6", // Blue
+    "#10B981", // Emerald
+    "#F59E0B", // Amber
+    "#EF4444", // Red
+    "#8B5CF6", // Violet
+    "#EC4899", // Pink
+    "#000000", // Black
+  ];
 
   return (
     <div className="min-h-screen p-8 pt-10 max-w-8xl mx-auto space-y-12 bg-[#F8F8FA]">
@@ -164,13 +233,12 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-up">
           {/* License Info */}
           <div className="bg-white rounded-2xl p-10 border border-black/15 relative overflow-hidden group">
-            {/* Card Accent */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#D0F500]/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 group-hover:bg-[#D0F500]/15 transition-colors" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-(--color-primary)/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 group-hover:bg-(--color-primary)/15 transition-colors" />
 
             <div className="flex items-center justify-between mb-10 relative z-10">
               <div className="flex items-center gap-5">
                 <div className="w-14 h-14 rounded-xl bg-black flex items-center justify-center shadow-lg">
-                  <Shield className="w-7 h-7 text-[#D0F500]" />
+                  <Shield className="w-7 h-7 text-(--color-primary)" />
                 </div>
                 <div>
                   <h2 className="font-black text-xl text-black tracking-tight leading-none">
@@ -182,7 +250,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               {authConfig?.isActive && (
-                <div className="flex items-center gap-2 bg-[#D0F500] text-black text-[10px] font-black px-4 py-2 rounded-xl shadow-lg shadow-[#D0F500]/20 uppercase tracking-tighter">
+                <div className="flex items-center gap-2 bg-(--color-primary) text-black text-[10px] font-black px-4 py-2 rounded-md  uppercase tracking-tighter">
                   <CheckCircle className="w-3.5 h-3.5" />
                   Aktif
                 </div>
@@ -228,6 +296,159 @@ export default function SettingsPage() {
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Business Profile */}
+          <div className="bg-white rounded-2xl p-10 border border-black/15 relative overflow-hidden group">
+            {/* Card Accent */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/3 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 group-hover:bg-amber-500/10 transition-colors" />
+
+            <div className="flex items-center gap-5 mb-10 relative z-10">
+              <div className="w-14 h-14 rounded-xl bg-black flex items-center justify-center shadow-lg">
+                <Building2 className="w-7 h-7 text-amber-500" />
+              </div>
+              <div>
+                <h2 className="font-black text-xl text-black tracking-tight leading-none">
+                  Profil Bisnis
+                </h2>
+                <p className="text-[10px] text-(--color-muted) font-black uppercase mt-2 tracking-widest leading-none">
+                  Identitas Workspace
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6 relative z-10">
+              <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl bg-[#F8F8FA] border border-black/5">
+                <div
+                  className="w-24 h-24 rounded-2xl bg-white border border-black/10 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer hover:border-(--color-primary) transition-all group/logo"
+                  onClick={() =>
+                    document.getElementById("logo-upload")?.click()
+                  }
+                >
+                  {businessProfile.logo ? (
+                    <img
+                      src={businessProfile.logo}
+                      alt="Logo"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-(--color-muted)/40">
+                      <Upload className="w-6 h-6" />
+                      <span className="text-[8px] font-black uppercase">
+                        Upload
+                      </span>
+                    </div>
+                  )}
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                  />
+                </div>
+                <div className="flex-1 space-y-4 w-full">
+                  <div>
+                    <p className="text-[10px] font-black text-(--color-muted)/40 uppercase mb-2 tracking-widest">
+                      Nama Bisnis / Toko
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={tempProfileName}
+                        onChange={(e) => setTempProfileName(e.target.value)}
+                        className="flex-1 bg-white border border-black/10 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-(--color-primary) outline-none"
+                        placeholder="Nama Toko Anda"
+                      />
+                      <button
+                        onClick={saveProfileName}
+                        className="bg-black text-white px-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-(--color-primary) hover:text-black transition-all"
+                      >
+                        Simpan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deactivate Option */}
+              <div className="pt-6 border-t border-black/5">
+                <button
+                  onClick={() => setShowDeactivateConfirm(true)}
+                  className="flex items-center gap-2 text-red-500 hover:text-red-700 text-[10px] font-black uppercase tracking-widest transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Hapus Aktivasi dari Perangkat Ini
+                </button>
+                <p className="mt-2 text-[9px] text-(--color-muted) leading-relaxed">
+                  Gunakan ini jika Anda ingin menggunakan kunci lisensi ini di
+                  perangkat lain. Data internal Anda tidak akan dihapus.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Theme Personalization */}
+          <div className="bg-white rounded-2xl p-10 border border-black/15 relative overflow-hidden group">
+            {/* Card Accent */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/3 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 group-hover:bg-purple-500/10 transition-colors" />
+
+            <div className="flex items-center gap-5 mb-10 relative z-10">
+              <div className="w-12 h-12 rounded-xl bg-black flex items-center justify-center shrink-0">
+                <Palette className="w-6 h-6 text-(--color-primary)" />
+              </div>
+              <div>
+                <h2 className="font-black text-xl text-black tracking-tight leading-none">
+                  Personalisasi Tema
+                </h2>
+                <p className="text-[10px] text-(--color-muted) font-black uppercase mt-2 tracking-widest leading-none">
+                  Aura Kontrol Panel
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6 relative z-10">
+              <div className="p-6 rounded-2xl bg-[#F8F8FA] border border-black/5">
+                <p className="text-[10px] font-black text-(--color-muted)/40 uppercase mb-4 tracking-widest">
+                  Warna Utama (Primary Color)
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {presetColors.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() =>
+                        saveSettings({ ...appSettings, primaryColor: color })
+                      }
+                      className={cn(
+                        "w-10 h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
+                        appSettings.primaryColor === color
+                          ? "border-black scale-110 shadow-lg"
+                          : "border-transparent",
+                      )}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                  <div className="w-10 h-10 rounded-full bg-white border border-black/10 flex items-center justify-center cursor-pointer overflow-hidden relative group/color">
+                    <input
+                      type="color"
+                      value={appSettings.primaryColor}
+                      onChange={(e) =>
+                        saveSettings({
+                          ...appSettings,
+                          primaryColor: e.target.value,
+                        })
+                      }
+                      className="absolute inset-0 opacity-0 cursor-pointer w-[200%] h-[200%]"
+                    />
+                    <Palette className="w-4 h-4 text-black/20" />
+                  </div>
+                </div>
+                <p className="mt-4 text-[10px] font-bold text-(--color-muted)/60 italic">
+                  * Reboot aplikasi mungkin diperlukan untuk efek penuh di
+                  beberapa komponen.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Database Stats */}
@@ -389,6 +610,16 @@ export default function SettingsPage() {
         description="PERINGATAN: Seluruh data karyawan, shift, dan jadwal akan dihapus secara permanen dari browser ini. Tindakan ini TIDAK BISA dibatalkan. Anda yakin?"
         onConfirm={confirmedClearAll}
         confirmText="Ya, Hapus Permanen"
+        variant="danger"
+      />
+
+      <ConfirmModal
+        open={showDeactivateConfirm}
+        onOpenChange={setShowDeactivateConfirm}
+        title="Hapus Aktivasi Lisensi?"
+        description="Tindakan ini akan mencabut lisensi dari perangkat ini. Anda akan diarahkan ke halaman aktivasi. Data karyawan dan jadwal Anda TETAP AMAN."
+        onConfirm={confirmedDeactivate}
+        confirmText="Ya, Cabut Lisensi"
         variant="danger"
       />
     </div>

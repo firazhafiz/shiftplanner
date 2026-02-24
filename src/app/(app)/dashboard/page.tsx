@@ -8,6 +8,7 @@ import type {
   ShiftType,
   ScheduleEntry,
   ScheduleConflict,
+  BusinessProfile,
 } from "@/types";
 import {
   Users,
@@ -42,6 +43,9 @@ export default function DashboardPage() {
     conflicts: 0,
   });
   const [recentEmployees, setRecentEmployees] = useState<Employee[]>([]);
+  const [businessProfile, setBusinessProfile] = useState<
+    BusinessProfile | undefined
+  >();
   const [loading, setLoading] = useState(true);
   const [showSeedConfirm, setShowSeedConfirm] = useState(false);
 
@@ -53,10 +57,11 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       const db = getDB();
-      const [employees, shiftTypes, schedules] = await Promise.all([
+      const [employees, shiftTypes, schedules, profile] = await Promise.all([
         db.getAllEmployees(),
         db.getAllShiftTypes(),
         db.getScheduleForMonth(year, month),
+        db.getBusinessProfile(),
       ]);
       const conflicts = detectConflicts(schedules, shiftTypes);
       setStats({
@@ -66,6 +71,7 @@ export default function DashboardPage() {
         conflicts: conflicts.length,
       });
       setRecentEmployees(employees.slice(-4).reverse());
+      setBusinessProfile(profile);
     } finally {
       setLoading(false);
     }
@@ -103,8 +109,8 @@ export default function DashboardPage() {
       sub: "Aktif terdaftar",
       value: stats.employees,
       icon: Users,
-      color: "#3B82F6",
-      bg: "linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)",
+      color: "var(--color-primary)",
+      bg: "black",
       href: "/employees",
     },
     {
@@ -112,8 +118,8 @@ export default function DashboardPage() {
       sub: "Variasi jam kerja",
       value: stats.shiftTypes,
       icon: Clock,
-      color: "#8B5CF6",
-      bg: "linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)",
+      color: "var(--color-primary)",
+      bg: "black",
       href: "/shifts",
     },
     {
@@ -121,8 +127,8 @@ export default function DashboardPage() {
       sub: "Bulan ini",
       value: stats.scheduledDays,
       icon: CalendarDays,
-      color: "#10B981",
-      bg: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+      color: "var(--color-primary)",
+      bg: "black",
       href: "/schedule",
     },
     {
@@ -130,11 +136,8 @@ export default function DashboardPage() {
       sub: "Butuh perhatian",
       value: stats.conflicts,
       icon: AlertTriangle,
-      color: stats.conflicts > 0 ? "#EF4444" : "#D0F500",
-      bg:
-        stats.conflicts > 0
-          ? "linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)"
-          : "linear-gradient(135deg, #09090b 0%, #27272a 100%)",
+      color: stats.conflicts > 0 ? "#EF4444" : "var(--color-primary)",
+      bg: stats.conflicts > 0 ? "#EF4444" : "black",
       href: "/schedule",
     },
   ];
@@ -145,16 +148,13 @@ export default function DashboardPage() {
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
         <div className="flex-1 space-y-6">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 bg-[#D0F500]/20 border border-[#D0F500]/40 text-[#6b7c00] text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full mb-2">
-              <img
-                src="/assets/logo-lime.svg"
-                alt="Logo"
-                className="w-3.5 h-3.5 object-contain"
-              />
+            <div className="inline-flex items-center gap-2 bg-(--color-primary)/20 border border-(--color-primary)/40 text-black text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full mb-2">
+              <span className="text-xs">⚡</span>
               Workspace Aktif
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-(--color-fg) tracking-tighter leading-none">
-              Ringkasan <span className="text-[#c1e300]">Dashboard.</span>
+              Ringkasan{" "}
+              <span className="text-(--color-primary)">Dashboard.</span>
             </h1>
             <p className="text-(--color-muted) font-medium text-sm md:text-base mt-3">
               Pantau seluruh operasional tim Anda dalam satu tampilan cerdas.
@@ -164,7 +164,7 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-3 self-start lg:self-end">
           <div className="px-6 py-3 rounded-md bg-white border border-black/15 text-xs font-black text-(--color-fg) flex items-center gap-3 uppercase tracking-widest">
-            <CalendarDays className="w-4 h-4 text-[#D0F500]" />
+            <CalendarDays className="w-4 h-4 text-(--color-primary)" />
             {formatDateId(now, "MMMM yyyy")}
           </div>
           {!loading && stats.employees > 0 && (
@@ -192,15 +192,12 @@ export default function DashboardPage() {
       ) : stats.employees === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-xl border border-black/15 relative overflow-hidden transition-all animate-fade-up">
           {/* Decorative background */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-[#D0F500]" />
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#D0F500]/10 rounded-full blur-3xl" />
-
-          <div className="w-12 h-12 rounded-xl bg-(--color-primary) flex items-center justify-center mb-10 border border-black/5 animate-bounce-subtle">
-            <Sparkles className="w-6 h-6 text-black" strokeWidth={2.5} />
-          </div>
+          <div className="absolute top-0 left-0 w-full h-1 bg-(--color-primary)" />
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-(--color-primary)/10 rounded-full blur-3xl" />
 
           <h2 className="text-3xl font-black text-(--color-fg) mb-4 tracking-tighter">
-            Workspace Menanti <span className="text-[#c1e300]">Anda.</span>
+            Workspace Menanti{" "}
+            <span className="text-(--color-primary)">Anda.</span>
           </h2>
           <p className="text-(--color-muted) text-lg mb-12 max-w-lg font-light leading-relaxed">
             Database Anda masih kosong. Mulai dengan membuat data karyawan atau
@@ -210,16 +207,20 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row gap-6">
             <Link
               href="/employees"
-              className="btn-primary py-4 px-12 rounded-md text-lg flex items-center gap-3 hover:scale-105 active:scale-95 transition-transform"
+              className="px-12 py-4 bg-(--color-primary) text-black rounded-md font-black text-lg flex items-center gap-3 hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-(--color-primary)/20"
             >
               <Plus className="w-6 h-6" strokeWidth={3} /> Buat Manual
             </Link>
-            <button
-              onClick={() => handleSeed(false)}
-              className="py-4 px-12 bg-black text-white rounded-md font-black text-lg flex items-center gap-3 hover:scale-105 active:scale-95 transition-all "
-            >
-              <Database className="w-6 h-6" /> Isi Data Demo
-            </button>
+            {/* Seed Demo is only shown if the workspace name is generic (hasn't been set up) */}
+            {(businessProfile?.name === "My Workspace" ||
+              !businessProfile?.name) && (
+              <button
+                onClick={() => handleSeed(false)}
+                className="py-4 px-12 bg-black text-white rounded-md font-black text-lg flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10"
+              >
+                <Database className="w-6 h-6" /> Isi Data Demo
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -270,7 +271,8 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between mb-8 md:mb-10">
                 <div>
                   <h2 className="text-xl md:text-2xl font-black text-(--color-fg) tracking-tight">
-                    Karyawan <span className="text-[#c1e300]">Terbaru.</span>
+                    Karyawan{" "}
+                    <span className="text-(--color-primary)">Terbaru.</span>
                   </h2>
                   <p className="text-[10px] text-(--color-muted) font-black uppercase tracking-widest mt-1">
                     Update Terakhir Tim
@@ -288,7 +290,7 @@ export default function DashboardPage() {
                 {recentEmployees.map((emp) => (
                   <div
                     key={emp.id}
-                    className="flex items-center gap-4 md:gap-5 p-3 md:p-5 rounded-2xl bg-[#F8F8FA] border border-black/5 hover:border-[#D0F500]/50 hover:bg-white hover:shadow-lg transition-all group cursor-pointer"
+                    className="flex items-center gap-4 md:gap-5 p-3 md:p-5 rounded-2xl bg-[#F8F8FA] border border-black/5 hover:border-(--color-primary)/50 hover:bg-white hover:shadow-lg transition-all group cursor-pointer"
                   >
                     <div
                       className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-[20px] flex items-center justify-center text-sm md:text-lg font-black text-white shadow-md"
@@ -325,14 +327,14 @@ export default function DashboardPage() {
             {/* Quick Actions Panel */}
             <div className="lg:col-span-4 bg-black text-white rounded-2xl p-6 md:p-10 relative overflow-hidden flex flex-col justify-between shadow-xl shadow-black/10">
               <div className="relative z-10">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-[#D0F500] flex items-center justify-center mb-6 md:mb-8 shadow-lg shadow-[#D0F500]/20">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-(--color-primary) flex items-center justify-center mb-6 md:mb-8 shadow-lg shadow-(--color-primary)/20">
                   <TrendingUp
                     className="w-5 h-5 md:w-6 md:h-6 text-black"
                     strokeWidth={3}
                   />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-black mb-2 tracking-tighter">
-                  Panel <span className="text-[#D0F500]">Kendali.</span>
+                  Panel <span className="text-(--color-primary)">Kendali.</span>
                 </h2>
                 <p className="text-white/50 text-xs md:text-sm font-medium mb-8 md:mb-10">
                   Aksi cepat untuk pengaturan workspace
@@ -341,7 +343,7 @@ export default function DashboardPage() {
                 <div className="space-y-3 md:space-y-4">
                   <Link
                     href="/employees"
-                    className="flex items-center gap-4 p-4 md:p-5 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 hover:border-[#D0F500]/30 transition-all group"
+                    className="flex items-center gap-4 p-4 md:p-5 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 hover:border-(--color-primary)/30 transition-all group"
                   >
                     <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white flex items-center justify-center shadow-inner">
                       <Users className="w-5 h-5 md:w-6 md:h-6 text-black" />
@@ -353,7 +355,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <Plus
-                      className="w-4 h-4 md:w-5 md:h-5 text-white/30 group-hover:text-[#D0F500] transition-colors"
+                      className="w-4 h-4 md:w-5 md:h-5 text-white/30 group-hover:text-(--color-primary) transition-colors"
                       strokeWidth={3}
                     />
                   </Link>
@@ -361,7 +363,7 @@ export default function DashboardPage() {
                     href="/schedule"
                     className="flex items-center gap-4 p-4 md:p-5 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 hover:border-blue-400/30 transition-all group"
                   >
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#D0F500] flex items-center justify-center shadow-inner">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-(--color-primary) flex items-center justify-center shadow-inner">
                       <CalendarDays className="w-5 h-5 md:w-6 md:h-6 text-black" />
                     </div>
                     <div className="flex-1">
@@ -378,7 +380,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Decorative Glow */}
-              <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#D0F500]/20 blur-[100px] pointer-events-none" />
+              <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-(--color-primary)/20 blur-[100px] pointer-events-none" />
 
               <div className="mt-10 md:mt-12 pt-6 md:pt-8 border-t border-white/10 relative z-10 text-center">
                 <p className="text-[9px] md:text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">

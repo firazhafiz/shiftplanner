@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Key, CheckCircle, AlertCircle, Loader } from "lucide-react";
 import { getHardwareId } from "@/lib/fingerprint";
@@ -14,6 +14,21 @@ export default function ActivatePage() {
   const [key, setKey] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    async function checkActivation() {
+      const db = getDB();
+      if (await db.isActivated()) {
+        const profile = await db.getBusinessProfile();
+        if (profile.isSetupComplete) {
+          router.push("/dashboard");
+        } else {
+          router.push("/setup");
+        }
+      }
+    }
+    checkActivation();
+  }, [router]);
 
   const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,9 +68,9 @@ export default function ActivatePage() {
           setStatus("success");
           setMessage("Aktivasi berhasil! Mengalihkan ke dashboard...");
 
-          // Use timeout for UX, then force redirect
+          // Use timeout for UX, then force redirect to setup
           setTimeout(() => {
-            window.location.href = "/dashboard";
+            window.location.href = "/setup";
           }, 1500);
         } catch (dbErr: any) {
           console.error("Database save failed:", dbErr);

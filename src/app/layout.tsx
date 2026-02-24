@@ -2,9 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShiftPlanner — Jadwal Shift Karyawan",
-  description:
-    "Aplikasi penjadwalan shift karyawan berbasis lokal. Data tersimpan di browser Anda.",
+  title: "ShiftPlanner — Manajemen Shift Karyawan",
+  description: "Aplikasi penjadwalan shift karyawan otomatis berbasis lokal.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

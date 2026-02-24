@@ -2,7 +2,12 @@
 // Conflict Detection — Validates schedule for issues
 // ============================================================
 
-import type { ScheduleEntry, ShiftType, ScheduleConflict } from "@/types";
+import type {
+  ScheduleEntry,
+  ShiftType,
+  ScheduleConflict,
+  Availability,
+} from "@/types";
 import { calcRestHours, timeToMinutes } from "@/lib/utils";
 
 /**
@@ -13,6 +18,7 @@ export function detectConflicts(
   entries: ScheduleEntry[],
   shiftTypes: ShiftType[],
   settings?: { shopClosedDays: number[]; minRestHours: number },
+  availabilities: Availability[] = [],
 ): ScheduleConflict[] {
   const conflicts: ScheduleConflict[] = [];
   const shiftMap = new Map(shiftTypes.map((s) => [s.id!, s]));
@@ -39,8 +45,21 @@ export function detectConflicts(
       byDate.set(entry.date, list);
     }
 
-    // Check: double shift or business closed
+    // Check: availability, double shift or business closed
     for (const [date, dayEntries] of byDate) {
+      // 1. Availability Check
+      const isUnavailable = availabilities.find(
+        (a) => a.employeeId === empId && a.date === date,
+      );
+      if (isUnavailable) {
+        conflicts.push({
+          employeeId: empId,
+          date,
+          type: "AVAILABILITY_CONFLICT",
+          message: `Karyawan terdaftar tidak tersedia (Cuti/Sakit${isUnavailable.reason ? `: ${isUnavailable.reason}` : ""})`,
+        });
+      }
+
       const d = new Date(date);
       const isClosedDay = closedDays.includes(d.getDay());
 

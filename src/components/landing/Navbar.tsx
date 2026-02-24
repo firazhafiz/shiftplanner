@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { Menu, X, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getDB } from "@/lib/db/db";
+import { useRouter } from "next/navigation";
 
 const navLinks = [
   { label: "Fitur", href: "#features" },
@@ -11,6 +13,7 @@ const navLinks = [
 ];
 
 export default function LandingNavbar() {
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Lock body scroll when menu is open
@@ -49,12 +52,21 @@ export default function LandingNavbar() {
                 </a>
               ))}
               <div className="pl-4 border-l border-(--color-border)">
-                <Link
-                  href="/activate"
+                <button
+                  onClick={async () => {
+                    const db = getDB();
+                    const activated = await db.isActivated();
+                    if (activated) {
+                      localStorage.removeItem("sp_logged_out");
+                      router.push("/dashboard");
+                    } else {
+                      router.push("/activate");
+                    }
+                  }}
                   className="btn-primary text-sm py-2.5 px-6 shadow-sm hover:shadow-[#D0F500]/30"
                 >
                   Masuk Sekarang
-                </Link>
+                </button>
               </div>
             </div>
 
@@ -108,13 +120,22 @@ export default function LandingNavbar() {
               </a>
             ))}
             <div className="h-px bg-black/5 my-2 mx-4" />
-            <Link
-              href="/activate"
-              className="btn-primary justify-center text-lg font-bold py-4 rounded-[1.2rem] shadow-xl shadow-[#D0F500]/20 hover:shadow-[#D0F500]/30 transition-all"
-              onClick={() => setMobileOpen(false)}
+            <button
+              onClick={async () => {
+                const db = getDB();
+                const activated = await db.isActivated();
+                setMobileOpen(false);
+                if (activated) {
+                  localStorage.removeItem("sp_logged_out");
+                  router.push("/dashboard");
+                } else {
+                  router.push("/activate");
+                }
+              }}
+              className="btn-primary justify-center text-lg font-bold py-4 rounded-[1.2rem] shadow-xl shadow-[#D0F500]/20 hover:shadow-[#D0F500]/30 transition-all focus:outline-none"
             >
               Mulai Sekarang
-            </Link>
+            </button>
           </div>
         </div>
       </div>

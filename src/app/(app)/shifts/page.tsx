@@ -12,6 +12,7 @@ import {
   Moon,
   Sun,
   Sunset,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ function ShiftModal({
   const [color, setColor] = useState(shift?.color ?? "#3B82F6");
   const [bgColor, setBgColor] = useState(shift?.bgColor ?? "#EFF6FF");
   const [isOff, setIsOff] = useState(shift?.isOff ?? false);
+  const [baseRate, setBaseRate] = useState(shift?.baseRate?.toString() ?? "");
   const [saving, setSaving] = useState(false);
 
   const handleColorPick = (c: (typeof SHIFT_COLORS)[0]) => {
@@ -63,6 +65,7 @@ function ShiftModal({
       color,
       bgColor,
       isOff,
+      baseRate: baseRate ? parseFloat(baseRate) : undefined,
     });
     setSaving(false);
   };
@@ -159,6 +162,31 @@ function ShiftModal({
               </div>
             </div>
           )}
+
+          <div>
+            <label className="block text-sm font-medium mb-1.5">
+              Tarif Dasar per Shift (Labor Cost)
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-(--color-muted)">
+                <span className="text-xs font-bold">Rp</span>
+              </div>
+              <input
+                type="number"
+                value={baseRate}
+                onChange={(e) => setBaseRate(e.target.value)}
+                placeholder="0"
+                className="input-field pl-10 font-mono tracking-tight"
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-(--color-muted)/30">
+                <Wallet className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-[10px] text-(--color-muted) mt-1">
+              Digunakan untuk menghitung estimasi pengeluaran gaji di grid
+              jadwal.
+            </p>
+          </div>
 
           {/* Color picker */}
           <div>
@@ -293,7 +321,7 @@ export default function ShiftsPage() {
         <div className="flex items-center gap-4">
           <div className="bg-white px-4 py-3 md:px-8 md:py-4 rounded-md border border-black/15 flex items-center gap-4 ">
             <div className="w-5 h-5 rounded-xl bg-black flex items-center justify-center">
-              <Clock className="w-6 h-6 text-[#D0F500]" />
+              <Clock className="w-6 h-6 text-(--color-primary)" />
             </div>
             <div>
               <p className="text-xl font-black leading-none tabular-nums">
@@ -309,7 +337,7 @@ export default function ShiftsPage() {
             className="px-4 py-3 md:px-8 md:py-4 bg-black text-white rounded-md flex items-center gap-3 group transition-all hover:scale-105 active:scale-95 font-black text-sm"
           >
             <Plus
-              className="w-5 h-5 text-[#D0F500] group-hover:rotate-90 transition-transform"
+              className="w-5 h-5 text-(--color-primary) group-hover:rotate-90 transition-transform"
               strokeWidth={3}
             />
             Tambah Shift
@@ -328,7 +356,7 @@ export default function ShiftsPage() {
         </div>
       ) : shiftTypes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-black/15 shadow-xl shadow-black/2 relative overflow-hidden transition-all animate-fade-up">
-          <div className="absolute top-0 left-0 w-full h-1 bg-[#D0F500]" />
+          <div className="absolute top-0 left-0 w-full h-1 bg-(--color-primary)" />
           <div className="w-24 h-24 rounded-2xl bg-[#F8F8FA] flex items-center justify-center mb-8 shadow-inner">
             <Clock className="w-12 h-12 text-(--color-muted)" />
           </div>
@@ -468,6 +496,17 @@ export default function ShiftsPage() {
                     <p className="text-sm font-black text-(--color-muted)">
                       Tidak ada operasional (LIBUR)
                     </p>
+                  </div>
+                )}
+
+                {shift.baseRate && (
+                  <div className="mt-4 pt-4 border-t border-black/5 flex items-center justify-between">
+                    <span className="text-[10px] font-black text-(--color-muted) uppercase tracking-widest">
+                      Labor Cost
+                    </span>
+                    <span className="text-sm font-black text-black font-mono">
+                      Rp {shift.baseRate.toLocaleString("id-ID")}
+                    </span>
                   </div>
                 )}
 

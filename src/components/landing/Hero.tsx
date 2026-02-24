@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Users } from "lucide-react";
+import { ArrowRight, CalendarDays, Users, Clock } from "lucide-react";
 
 export default function Hero() {
   return (
@@ -83,10 +83,9 @@ export default function Hero() {
                   ))}
                 </div>
                 <p className="text-xs font-semibold text-(--color-fg) mt-0.5">
-                  Digunakan oleh{" "}
-                  <span className="underline decoration-[#D0F500] decoration-2">
-                    150+ Manajer
-                  </span>
+                  Sederhanakan Operasional <br />
+                  Tim Anda dengan{" "}
+                  <span className="text-[#D0F500]">Vibe Premium.</span>
                 </p>
               </div>
             </div>
@@ -102,12 +101,8 @@ export default function Hero() {
             {/* Mock calendar header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-(--color-primary) flex items-center justify-center shadow-sm">
-                  <img
-                    src="/assets/logo-dark.svg"
-                    alt="Logo"
-                    className="w-6 h-6 object-contain"
-                  />
+                <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center shadow-lg">
+                  <Clock className="w-4 h-4 text-[#D0F500]" />
                 </div>
                 <div>
                   <p className="font-bold text-sm text-(--color-fg)">
@@ -119,9 +114,11 @@ export default function Hero() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-(--color-surface) rounded-lg px-3 py-1.5">
-                  <Users className="w-3.5 h-3.5 text-(--color-muted)" />
-                  <span className="text-xs font-medium">12</span>
+                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/20 backdrop-blur-md w-fit mx-auto lg:mx-0">
+                  <span className="w-2 h-2 rounded-full bg-[#D0F500] shadow-[0_0_12px_rgba(208,245,0,0.5)]" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/80">
+                    Shift Management evolved
+                  </span>
                 </div>
                 <div className="bg-(--color-primary) text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm">
                   Export Excel
@@ -215,8 +212,8 @@ export default function Hero() {
           </div>
 
           {/* Decorative Elements */}
-          <div className="absolute -top-4 -right-4 w-24 h-24 bg-(--color-primary) rounded-full blur-2xl opacity-20 animate-pulse" />
-          <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-purple-500 rounded-full blur-3xl opacity-10" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-(--color-primary)/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 animate-pulse-subtle" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-(--color-primary)/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/4" />
         </div>
       </div>
     </section>
