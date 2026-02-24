@@ -7,9 +7,10 @@ import { getDB } from "@/lib/db/db";
 import { useRouter } from "next/navigation";
 
 const navLinks = [
-  { label: "Fitur", href: "#features" },
-  { label: "Cara Kerja", href: "#how-it-works" },
+  { label: "Fitur Utama", href: "#features" },
   { label: "Harga", href: "#pricing" },
+  { label: "Testimoni ", href: "#testimonials" },
+  { label: "Cara Pakai", href: "#how-it-works" },
 ];
 
 export default function LandingNavbar() {

@@ -1,56 +1,56 @@
 "use client";
 
 import {
-  CalendarDays,
   Zap,
-  AlertTriangle,
-  FileSpreadsheet,
-  Wifi,
-  Shield,
+  DollarSign,
+  Palette,
+  ShieldCheck,
+  UserCheck,
+  FileDown,
 } from "lucide-react";
 
 const features = [
   {
-    icon: CalendarDays,
-    title: "Kalender Visual",
-    desc: "Grid jadwal bulanan yang jelas dan interaktif. Klik sel untuk assign shift langsung.",
-    color: "#3B82F6",
-    bg: "#EFF6FF",
-  },
-  {
-    icon: "/assets/logo-lime.svg",
-    title: "Auto-Rolling Shift",
-    desc: "Terapkan pola 2-2-2 atau pola apapun ke seluruh bulan dengan satu klik.",
+    icon: Zap,
+    title: "Penjadwalan Otomatis (Auto-Rolling)",
+    desc: "Tinggalkan Excel manual. Terapkan pola shift (2-2-2 dsb) ke seluruh bulan hanya dalam hitungan detik.",
     color: "#D0F500",
     bg: "#FAFFD4",
   },
   {
-    icon: AlertTriangle,
-    title: "Deteksi Konflik",
-    desc: "Sistem otomatis mendeteksi double shift atau waktu istirahat < 11 jam dan memberi peringatan.",
-    color: "#EF4444",
-    bg: "#FEF2F2",
-  },
-  {
-    icon: FileSpreadsheet,
-    title: "Ekspor Excel & Gambar",
-    desc: "Export jadwal ke file .xlsx siap cetak atau simpan sebagai gambar PNG resolusi tinggi.",
+    icon: DollarSign,
+    title: "Estimasi Biaya (Labor Cost)",
+    desc: "Pantau budget operasional secara real-time. Hitung total gaji berdasarkan tarif per tipe shift secara otomatis.",
     color: "#10B981",
     bg: "#ECFDF5",
   },
   {
-    icon: Wifi,
-    title: "100% Offline",
-    desc: "Setelah aktivasi pertama, semua data tersimpan di browser. Tidak perlu internet.",
+    icon: Palette,
+    title: "Identitas Brand Kustom",
+    desc: "Sesuaikan warna tema, pasang logo, dan beri nama bisnis Anda sendiri agar aplikasi terasa eksklusif milik Anda.",
+    color: "#3B82F6",
+    bg: "#EFF6FF",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Keamanan Data Lokal (Privacy First)",
+    desc: "100% data tersimpan di browser Anda. Tidak ada risiko kebocoran data di cloud. Privasi bisnis Anda terjaga total.",
     color: "#8B5CF6",
     bg: "#F5F3FF",
   },
   {
-    icon: Shield,
-    title: "Satu Lisensi, Satu Perangkat",
-    desc: "Lisensi terikat ke perangkat spesifik. Backup JSON untuk pindah perangkat kapanpun.",
+    icon: UserCheck,
+    title: "Manajemen Ketersediaan",
+    desc: "Hindari salah jadwal. Monitor hari libur, cuti, dan ketersediaan karyawan lewat deteksi konflik pintar.",
     color: "#F59E0B",
     bg: "#FFFBEB",
+  },
+  {
+    icon: FileDown,
+    title: "Ekspor Profesional Sekali Klik",
+    desc: "Unduh jadwal dalam format Excel (.xlsx) siap cetak atau gambar (PNG) beresolusi tinggi lengkap dengan logo Anda.",
+    color: "#EF4444",
+    bg: "#FEF2F2",
   },
 ];
 
