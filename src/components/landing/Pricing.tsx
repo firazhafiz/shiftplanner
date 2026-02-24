@@ -58,7 +58,7 @@ const tiers = [
       "Support VIP & Konsultasi",
       "Akses Fitur Analitik",
     ],
-    cta: "Hubungi Penjualan",
+    cta: "Hubungi Kami",
     highlight: false,
   },
 ];
@@ -94,10 +94,10 @@ export default function Pricing() {
               <div
                 key={tier.name}
                 className={cn(
-                  "relative flex flex-col p-8 rounded-4xl transition-all duration-300 group",
+                  "relative flex flex-col p-8 rounded-2xl transition-all duration-300 group",
                   tier.highlight
                     ? "bg-black text-white shadow-xl scale-102 z-20"
-                    : "bg-[#F8F8FA] text-black border border-black/5 items-stretch hover:bg-white",
+                    : " text-black border border-black/30 items-stretch hover:bg-white",
                 )}
               >
                 {tier.badge && (
@@ -174,7 +174,7 @@ export default function Pricing() {
 
                 <button
                   className={cn(
-                    "w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all",
+                    "w-full py-4 rounded-md font-black text-sm uppercase tracking-widest transition-all",
                     tier.highlight
                       ? "bg-(--color-primary) text-black hover:scale-105 active:scale-95 shadow-xl shadow-(--color-primary)/20"
                       : "bg-black text-white hover:bg-(--color-primary) hover:text-black hover:shadow-xl active:scale-95",

@@ -85,7 +85,7 @@ export default function Hero() {
                 <p className="text-xs font-semibold text-(--color-fg) mt-0.5">
                   Sederhanakan Operasional <br />
                   Tim Anda dengan{" "}
-                  <span className="text-[#D0F500]">Vibe Premium.</span>
+                  <span className="text-amber-600">Vibe Premium.</span>
                 </p>
               </div>
             </div>
