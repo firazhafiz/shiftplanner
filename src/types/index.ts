@@ -38,6 +38,8 @@ export interface AuthConfig {
   hardwareId: string;
   activatedAt: Date;
   isActive: boolean;
+  tier: "starter" | "personal" | "pro";
+  maxDevices: number;
 }
 
 // Rolling shift pattern config

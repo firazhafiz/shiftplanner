@@ -7,59 +7,52 @@ const tiers = [
   {
     name: "Starter",
     price: "0",
-    description: "Ideal untuk mencoba kemudahan penjadwalan otomatis.",
+    description:
+      "Ideal untuk tim kecil yang ingin mencoba efisiensi jadwal otomatis.",
     icon: Zap,
     features: [
       "Maksimal 5 Karyawan",
-      "Penjadwalan Otomatis",
+      "Otomatisasi 7 Hari",
+      "Master Shift Dasar",
+      "Export Gambar (Watermark)",
       "Penyimpanan Lokal Aman",
-      "Export dengan Watermark",
     ],
-    cta: "Mulai Sekarang",
+    cta: "Mulai Gratis Sekarang",
     highlight: false,
   },
   {
     name: "Personal",
     price: "99k",
-    description: "Solusi sekali bayar paling hemat untuk UMKM.",
+    description:
+      "Pilihan terbaik untuk owner UMKM yang ingin kelola tim mandiri.",
     icon: User,
     features: [
-      "Karyawan Tanpa Batas",
-      "1 Perangkat Aktif",
-      "Export Tanpa Watermark",
-      "Sekali Bayar Selamanya",
+      "Karyawan TANPA BATAS",
+      "Otomatisasi 31 Hari (1 Bulan)",
+      "Manajemen Ketersediaan (Izin/Cuti)",
+      "Export Gambar & Excel (No Watermark)",
+      "Semua Fitur pada Starter",
     ],
     cta: "Pilih UMKM Mandiri",
     highlight: false,
   },
   {
     name: "Pro",
-    price: "249k",
-    description: "Sesuaikan brand Anda sendiri di setiap jadwal.",
+    price: "349k",
+    description: "Efisiensi manajemen profesional dengan kontrol biaya penuh.",
     icon: Crown,
     features: [
-      "Semua fitur Personal",
-      "Custom Logo & Warna Brand",
-      "3 Perangkat Aktif",
-      "Prioritas Update Fitur",
+      "Otomatisasi TANPA BATAS",
+      "Labor Cost Estimation (Real-time)",
+      "WA Auto-Share ke Karyawan",
+      "Live Portal & Publikasi Jadwal",
+      "Custom Logo & Branding Bisnis",
+      "Shift Templates Library Lengkap",
+      "Semua Fitur pada Personal",
     ],
-    cta: "Pilih Professional",
+    cta: "Mulai Kelola Profesional",
     highlight: true,
-    badge: "Paling Populer",
-  },
-  {
-    name: "Enterprise",
-    price: "499k",
-    description: "Kendali total untuk bisnis dengan banyak cabang.",
-    icon: Building2,
-    features: [
-      "Semua fitur Pro",
-      "10 Perangkat Aktif",
-      "Support VIP & Konsultasi",
-      "Akses Fitur Analitik",
-    ],
-    cta: "Hubungi Kami",
-    highlight: false,
+    badge: "Efisiensi Maksimal",
   },
 ];
 
@@ -87,17 +80,17 @@ export default function Pricing() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {tiers.map((tier) => {
             const Icon = tier.icon;
             return (
               <div
                 key={tier.name}
                 className={cn(
-                  "relative flex flex-col p-8 rounded-2xl transition-all duration-300 group",
+                  "relative flex flex-col p-8 md:p-10 rounded-[32px] transition-all duration-500 group border",
                   tier.highlight
-                    ? "bg-black text-white shadow-xl scale-102 z-20"
-                    : " text-black border border-black/30 items-stretch hover:bg-white",
+                    ? "bg-black text-white shadow-2xl scale-105 z-20 border-white/10 "
+                    : " backdrop-blur-sm text-black border-black/30",
                 )}
               >
                 {tier.badge && (

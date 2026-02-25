@@ -27,6 +27,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ConfirmModal from "@/components/shared/ConfirmModal";
+import { AuthConfig } from "@/types";
 
 // ── Employee Form Modal ──────────────────────────────────────
 const COLORS = [
@@ -346,20 +347,40 @@ export default function EmployeesPage() {
     direction: "asc" | "desc";
   }>({ direction: "asc" });
   const [deleteTarget, setDeleteTarget] = useState<Employee | undefined>();
+  const [authConfig, setAuthConfig] = useState<AuthConfig | undefined>();
 
-  const loadEmployees = useCallback(async () => {
+  const loadData = useCallback(async () => {
     const db = getDB();
-    const data = await db.getAllEmployees();
+    const [data, auth] = await Promise.all([
+      db.getAllEmployees(),
+      db.getAuthConfig(),
+    ]);
     setEmployees(data);
+    setAuthConfig(auth);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    loadEmployees();
-  }, [loadEmployees]);
+    loadData();
+  }, [loadData]);
 
   const handleSave = async (data: Omit<Employee, "id" | "createdAt">) => {
     const db = getDB();
+
+    // Enforce Starter tier limit (5 employees)
+    if (!editTarget?.id) {
+      const auth = await db.getAuthConfig();
+      if (auth?.tier === "starter" && employees.length >= 5) {
+        toast.error(
+          "Batas Paket Starter tercapai (Maksimal 5 Karyawan). Silakan upgrade ke paket UMKM atau Professional!",
+          {
+            duration: 5000,
+          },
+        );
+        return;
+      }
+    }
+
     if (editTarget?.id) {
       await db.updateEmployee(editTarget.id, data);
       toast.success("Data karyawan diperbarui!");
@@ -369,7 +390,7 @@ export default function EmployeesPage() {
     }
     setModalOpen(false);
     setEditTarget(undefined);
-    await loadEmployees();
+    await loadData();
   };
 
   const handleDelete = async (emp: Employee) => {
@@ -382,7 +403,7 @@ export default function EmployeesPage() {
     await db.deleteEmployee(deleteTarget.id!);
     toast.success(`Karyawan ${deleteTarget.name} telah dihapus.`);
     setDeleteTarget(undefined);
-    await loadEmployees();
+    await loadData();
   };
 
   const filteredAndSorted = employees
@@ -524,9 +545,26 @@ export default function EmployeesPage() {
                   <p className="font-black text-sm text-(--color-fg) truncate leading-tight">
                     {emp.name}
                   </p>
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">
-                    {emp.position}
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
+                      {emp.position}
+                    </p>
+                    <button
+                      onClick={() => {
+                        if (authConfig?.tier === "starter") {
+                          toast.error(
+                            "Fitur Ketersediaan eksklusif untuk paket UMKM & Professional.",
+                          );
+                          return;
+                        }
+                        setAvailabilityTarget(emp);
+                      }}
+                      className="text-[10px] font-black text-amber-600 uppercase flex items-center gap-1"
+                    >
+                      <CalendarDays className="w-2.5 h-2.5" />
+                      Status
+                    </button>
+                  </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
@@ -592,7 +630,15 @@ export default function EmployeesPage() {
 
                 <div className="flex gap-2 mb-6">
                   <button
-                    onClick={() => setAvailabilityTarget(emp)}
+                    onClick={() => {
+                      if (authConfig?.tier === "starter") {
+                        toast.error(
+                          "Fitur Ketersediaan eksklusif untuk paket UMKM & Professional.",
+                        );
+                        return;
+                      }
+                      setAvailabilityTarget(emp);
+                    }}
                     className="flex-1 py-2.5 bg-[#F8F8FA] border border-black/5 rounded-xl flex items-center justify-center gap-2 hover:bg-(--color-primary)/10 transition-all text-[10px] font-black uppercase tracking-widest text-(--color-muted) hover:text-black"
                   >
                     <CalendarDays className="w-3.5 h-3.5" />

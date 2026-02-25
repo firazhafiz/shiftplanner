@@ -25,11 +25,11 @@ export class ShiftPlannerDB extends Dexie {
   constructor() {
     super("ShiftPlannerDB");
 
-    this.version(5).stores({
+    this.version(6).stores({
       employees: "++id, name, position, createdAt",
       shiftTypes: "++id, name, code",
       schedules: "++id, employeeId, date, shiftTypeId, createdAt",
-      authConfig: "++id, licenseKey, isActive",
+      authConfig: "++id, licenseKey, isActive, tier",
       appSettings: "++id",
       availability: "++id, employeeId, date",
       businessProfile: "++id",

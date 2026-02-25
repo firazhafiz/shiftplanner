@@ -100,7 +100,7 @@ export default function Hero() {
           <div className="bg-white/80 rounded-2xl border border-black/40 p-6 backdrop-blur-sm relative z-10 rotate-1 hover:rotate-0 transition-transform duration-700">
             {/* Mock calendar header */}
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
+              <div className="flex md:flex-row flex-col md:items-center items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center shadow-lg">
                   <Clock className="w-4 h-4 text-[#D0F500]" />
                 </div>
@@ -114,12 +114,7 @@ export default function Hero() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/20 backdrop-blur-md w-fit mx-auto lg:mx-0">
-                  <span className="w-2 h-2 rounded-full bg-[#D0F500] shadow-[0_0_12px_rgba(208,245,0,0.5)]" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/80">
-                    Shift Management evolved
-                  </span>
-                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/20 backdrop-blur-md w-fit mx-auto lg:mx-0"></div>
                 <div className="bg-(--color-primary) text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm">
                   Export Excel
                 </div>

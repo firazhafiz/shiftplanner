@@ -15,6 +15,7 @@ import type {
   Availability,
   RollingPattern,
   BusinessProfile,
+  AuthConfig,
 } from "@/types";
 import {
   getDaysOfMonth,
@@ -159,6 +160,7 @@ function RollingModal({
   shiftTypes,
   onApply,
   onClose,
+  tier = "starter",
 }: {
   employees: Employee[];
   shiftTypes: ShiftType[];
@@ -168,6 +170,7 @@ function RollingModal({
     offset: number,
   ) => Promise<void>;
   onClose: () => void;
+  tier?: "starter" | "personal" | "pro";
 }) {
   const [selectedEmp, setSelectedEmp] = useState<number | "all">("all");
   const [pattern, setPattern] = useState<RollingPattern[]>(
@@ -184,7 +187,17 @@ function RollingModal({
     );
   };
 
+  const totalCycle = pattern.reduce((s, p) => s + p.duration, 0);
+  const maxDays = tier === "starter" ? 7 : tier === "personal" ? 31 : 999;
+  const isOverLimit = totalCycle > maxDays;
+
   const handleApply = async () => {
+    if (isOverLimit) {
+      toast.error(
+        `Batas otomasi paket ${tier?.toUpperCase()} adalah ${maxDays} hari. Silakan kurangi durasi shift atau upgrade paket!`,
+      );
+      return;
+    }
     setApplying(true);
     if (selectedEmp === "all") {
       for (const emp of employees) {
@@ -197,8 +210,6 @@ function RollingModal({
     onClose();
   };
 
-  const totalCycle = pattern.reduce((s, p) => s + p.duration, 0);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-fade-up max-h-[90vh] overflow-y-auto">
@@ -206,7 +217,17 @@ function RollingModal({
           <div>
             <p className="font-bold">Rolling Shift Otomatis</p>
             <p className="text-xs text-(--color-muted)">
-              Total siklus: {totalCycle} hari
+              Total siklus: {totalCycle} hari{" "}
+              {tier !== "pro" && (
+                <span
+                  className={cn(
+                    "ml-1",
+                    isOverLimit ? "text-red-500 font-bold" : "text-blue-500",
+                  )}
+                >
+                  (Maks {maxDays} hari)
+                </span>
+              )}
             </p>
           </div>
           <button
@@ -491,6 +512,7 @@ export default function SchedulePage() {
   const [businessProfile, setBusinessProfile] = useState<
     BusinessProfile | undefined
   >();
+  const [authConfig, setAuthConfig] = useState<AuthConfig | undefined>();
 
   const [assignModal, setAssignModal] = useState<{
     employee: Employee;
@@ -567,7 +589,7 @@ export default function SchedulePage() {
     const prevYear = month === 1 ? year - 1 : year;
     const prevMonth = month === 1 ? 12 : month - 1;
 
-    const [emps, shifts, sched, settings, avail, prevSched, profile] =
+    const [emps, shifts, sched, settings, avail, prevSched, profile, auth] =
       await Promise.all([
         db.getAllEmployees(),
         db.getAllShiftTypes(),
@@ -576,6 +598,7 @@ export default function SchedulePage() {
         db.getAllAvailability(),
         db.getScheduleForMonth(prevYear, prevMonth),
         db.getBusinessProfile(),
+        db.getAuthConfig(),
       ]);
 
     setEmployees(emps);
@@ -584,6 +607,7 @@ export default function SchedulePage() {
     setAppSettings(settings);
     setAvailabilities(avail);
     setBusinessProfile(profile);
+    setAuthConfig(auth);
 
     // Combine current and previous month (last 2 days) for conflict detection
     const last2Days = getDaysOfMonth(prevYear, prevMonth).slice(-2);
@@ -596,9 +620,14 @@ export default function SchedulePage() {
     setLoading(false);
   }, [year, month]);
 
+  const totalLaborCost = schedules.reduce((total, s) => {
+    const shift = shiftMap.get(s.shiftTypeId);
+    return total + (shift?.baseRate || 0);
+  }, 0);
+
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, year, month]);
 
   const handleCellClick = async (emp: Employee, date: string) => {
     if (swapMode.active) {
@@ -720,6 +749,10 @@ export default function SchedulePage() {
   };
 
   const handleWhatsAppShare = (emp: Employee) => {
+    if (authConfig?.tier !== "pro") {
+      toast.error("Fitur WhatsApp Share eksklusif untuk paket Professional.");
+      return;
+    }
     const empSchedules = schedules.filter((s) => s.employeeId === emp.id);
     if (empSchedules.length === 0) {
       toast.error(`Belum ada jadwal untuk ${emp.name}`);
@@ -758,6 +791,10 @@ export default function SchedulePage() {
   };
 
   const handlePublish = async () => {
+    if (authConfig?.tier !== "pro") {
+      toast.error("Fitur Portal Publik eksklusif untuk paket Professional.");
+      return;
+    }
     setIsPublishing(true);
     try {
       const db = getDB();
@@ -797,6 +834,10 @@ export default function SchedulePage() {
   };
 
   const handleExportExcel = () => {
+    if (authConfig?.tier === "starter") {
+      toast.error("Penyimpanan Excel eksklusif untuk paket Personal & Pro.");
+      return;
+    }
     exportToExcel(
       employees,
       shiftTypes,
@@ -804,6 +845,7 @@ export default function SchedulePage() {
       year,
       month,
       businessProfile?.name,
+      authConfig?.tier || "personal",
     );
   };
 
@@ -813,6 +855,7 @@ export default function SchedulePage() {
       await exportScheduleAsImage(
         "export-container",
         `jadwal-${businessProfile?.name || "shift"}-${year}-${String(month).padStart(2, "0")}.png`,
+        authConfig?.tier || "personal",
       );
     } finally {
       setExportingImg(false);
@@ -888,7 +931,7 @@ export default function SchedulePage() {
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 md:gap-6">
             <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4 flex-1">
               {/* Date Navigator */}
-              <div className="flex items-center gap-1 p-1 bg-[#F8F8FA] rounded-md border border-black/5 shadow-inner">
+              <div className="flex items-center gap-1 p-1 bg-[#F8F8FA] w-fit rounded-md border  border-black/5 shadow-inner">
                 <button
                   onClick={prevMonth}
                   className="w-11 h-11 rounded-xl hover:bg-white hover:shadow-sm flex items-center justify-center transition-all text-black"
@@ -906,175 +949,192 @@ export default function SchedulePage() {
                 </button>
               </div>
 
-              {/* Employee Search */}
-              <div className="relative group max-w-md flex-1">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-(--color-muted) group-focus-within:text-black transition-colors" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Cari karyawan di jadwal..."
-                  className="w-full h-13 bg-[#F8F8FA] border border-black/5 rounded-md pl-12 pr-4 text-xs font-light outline-none focus:ring-2 focus:ring-(--color-primary) focus:bg-white transition-all text-black"
-                />
-              </div>
+              {/* Pro Only: Labor Cost Estimation */}
+              {authConfig?.tier === "pro" && totalLaborCost > 0 && (
+                <div className="flex items-center gap-3 px-6 py-3 bg-black border border-black/5 rounded-md shadow-sm">
+                  <div className="w-8 h-8 rounded-lg bg-(--color-primary)/10 flex items-center justify-center shrink-0">
+                    <Wallet className="w-4 h-4 text-(--color-primary)" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-(--color-primary) uppercase tracking-widest leading-none">
+                      Estimasi Biaya
+                    </p>
+                    <p className="text-sm font-black text-white font-mono mt-1 leading-none tabular-nums">
+                      Rp {totalLaborCost.toLocaleString("id-ID")}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap w-full md:w-auto">
-              {/* Action Group Primary */}
-              <div className="flex items-center gap-2 p-1 bg-black rounded-md flex-1 md:flex-none">
-                <button
-                  onClick={handlePublish}
-                  disabled={isPublishing}
-                  className="h-10 flex-1 md:flex-none px-4 bg-(--color-primary) text-(--color-primary-fg) rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:brightness-110 transition-all disabled:opacity-50"
-                >
-                  {isPublishing ? (
-                    <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Globe className="w-3.5 h-3.5" />
-                  )}
-                  Bagikan
-                </button>
-                <button
-                  onClick={() => setRollingModal(true)}
-                  className="h-10 flex-1 md:flex-none px-4 bg-white text-black rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/95 transition-all"
-                >
-                  <Repeat className="w-3.5 h-3.5" />
-                  Otomatis
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 p-1 bg-black rounded-md w-full md:w-auto">
-                <button
-                  onClick={() => {
-                    setSwapMode({ active: !swapMode.active });
-                    if (!swapMode.active) {
-                      toast.info(
-                        "Mode Swap Aktif: Drag & Drop jadwal untuk menukar.",
-                        {
-                          duration: 4000,
-                        },
-                      );
-                    }
-                  }}
-                  className={cn(
-                    "h-10 px-4 rounded-md flex items-center justify-center gap-2 transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest",
-                    swapMode.active
-                      ? "bg-(--color-primary) text-(--color-primary-fg) shadow-lg shadow-(--color-primary)/20 scale-105"
-                      : "bg-white text-black hover:bg-white/95",
-                  )}
-                  title="Tukar Jadwal (Drag & Drop)"
-                >
-                  <Repeat
-                    className={cn(
-                      "w-4 h-4",
-                      swapMode.active && "animate-spin-slow",
-                    )}
-                  />
-                  {swapMode.active ? "Mode Swap" : "Tukar"}
-                </button>
-                <button
-                  onClick={() => setSettingsModal(true)}
-                  className="h-10 bg-white text-black rounded-md flex items-center justify-center hover:bg-white/95 transition-all shadow-sm"
-                  title="Konfigurasi Bisnis"
-                >
-                  <SettingsIcon className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Action Group Secondary (Export) */}
-              <div className="flex items-center gap-2 p-1 bg-(--color-primary) rounded-md border border-black/15 ">
-                <button
-                  onClick={handleExportExcel}
-                  className="w-10 h-10 bg-black border border-black/5 text-emerald-600 rounded-md flex items-center justify-center transition-all shadow-sm"
-                  title="Unduh Excel"
-                >
-                  <FileSpreadsheet className="w-5 h-5 text-white" />
-                </button>
-                <button
-                  onClick={handleExportImage}
-                  disabled={exportingImg}
-                  className="w-10 h-10 bg-black border border-black/5 text-blue-600 rounded-md flex items-center justify-center transition-all shadow-sm disabled:opacity-50"
-                  title="Unduh Gambar"
-                >
-                  <ImageIcon className="w-5 h-5 text-white" />
-                </button>
-              </div>
+            {/* Employee Search */}
+            <div className="relative group max-w-md flex-1">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-(--color-muted) group-focus-within:text-black transition-colors" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari karyawan di jadwal..."
+                className="w-full h-13 bg-[#F8F8FA] border border-black/5 rounded-md pl-12 pr-4 text-xs font-light outline-none focus:ring-2 focus:ring-(--color-primary) focus:bg-white transition-all text-black"
+              />
             </div>
           </div>
 
-          {/* Row 2: Filters & Legend */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-6 border-t border-black/5">
-            {/* Sorting */}
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-(--color-muted) uppercase tracking-[0.2em] ml-1">
-                Urutkan Berdasarkan
-              </p>
-              <div className="flex items-center gap-2 p-1 bg-[#F8F8FA] rounded-md border border-black/5 w-fit">
-                {[
-                  { id: "name", label: "Nama", icon: ArrowDownAZ },
-                  {
-                    id: "position",
-                    label: "Jabatan",
-                    icon: ArrowDownWideNarrow,
-                  },
-                  { id: "total", label: "Total", icon: SortAsc },
-                ].map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() =>
-                      setSortConfig({
-                        key: s.id as any,
-                        direction:
-                          sortConfig.key === s.id &&
-                          sortConfig.direction === "asc"
-                            ? "desc"
-                            : "asc",
-                      })
-                    }
-                    className={cn(
-                      "h-9 px-4 rounded-md flex items-center gap-2 transition-all text-[10px] font-black uppercase tracking-wider",
-                      sortConfig.key === s.id
-                        ? "bg-black text-white shadow-md"
-                        : "hover:bg-white text-(--color-muted)/60",
-                    )}
-                  >
-                    <s.icon
-                      className={cn(
-                        "w-3.5 h-3.5",
-                        sortConfig.key === s.id &&
-                          sortConfig.direction === "desc" &&
-                          "rotate-180",
-                      )}
-                    />
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+          <div className="flex items-center gap-3 flex-wrap w-full md:w-auto">
+            {/* Action Group Primary */}
+            <div className="flex items-center gap-2 p-1 bg-black rounded-md flex-1 md:flex-none">
+              <button
+                onClick={handlePublish}
+                disabled={isPublishing}
+                className="h-10 flex-1 md:flex-none px-4 bg-(--color-primary) text-(--color-primary-fg) rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:brightness-110 transition-all disabled:opacity-50"
+              >
+                {isPublishing ? (
+                  <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Globe className="w-3.5 h-3.5" />
+                )}
+                Bagikan
+              </button>
+              <button
+                onClick={() => setRollingModal(true)}
+                className="h-10 flex-1 md:flex-none px-4 bg-white text-black rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/95 transition-all"
+              >
+                <Repeat className="w-3.5 h-3.5" />
+                Otomatis
+              </button>
             </div>
 
-            {/* Legend */}
-            <div className="space-y-3 lg:text-right">
-              <p className="text-xs font-semibold text-(--color-muted) uppercase tracking-[0.2em] mr-1">
-                Indikator Shift
-              </p>
-              <div className="flex flex-wrap items-center lg:justify-end gap-x-6 gap-y-2">
-                {shiftTypes.map((s, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: s.color }}
-                    />
-                    <span className="text-xs font-black uppercase tracking-tight text-(--color-fg)">
-                      {s.name} <span className="opacity-40">({s.code})</span>
-                    </span>
-                  </div>
-                ))}
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                  <span className="text-xs font-black uppercase text-red-500">
-                    Konflik
+            <div className="grid grid-cols-2 gap-2 p-1 bg-black rounded-md w-full md:w-auto">
+              <button
+                onClick={() => {
+                  setSwapMode({ active: !swapMode.active });
+                  if (!swapMode.active) {
+                    toast.info(
+                      "Mode Swap Aktif: Drag & Drop jadwal untuk menukar.",
+                      {
+                        duration: 4000,
+                      },
+                    );
+                  }
+                }}
+                className={cn(
+                  "h-10 px-4 rounded-md flex items-center justify-center gap-2 transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest",
+                  swapMode.active
+                    ? "bg-(--color-primary) text-(--color-primary-fg) shadow-lg shadow-(--color-primary)/20 scale-105"
+                    : "bg-white text-black hover:bg-white/95",
+                )}
+                title="Tukar Jadwal (Drag & Drop)"
+              >
+                <Repeat
+                  className={cn(
+                    "w-4 h-4",
+                    swapMode.active && "animate-spin-slow",
+                  )}
+                />
+                {swapMode.active ? "Mode Swap" : "Tukar"}
+              </button>
+              <button
+                onClick={() => setSettingsModal(true)}
+                className="h-10 bg-white text-black rounded-md flex items-center justify-center hover:bg-white/95 transition-all shadow-sm"
+                title="Konfigurasi Bisnis"
+              >
+                <SettingsIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Action Group Secondary (Export) */}
+            <div className="flex items-center gap-2 p-1 bg-(--color-primary) rounded-md border border-black/15 ">
+              <button
+                onClick={handleExportExcel}
+                className="w-10 h-10 bg-black border border-black/5 text-emerald-600 rounded-md flex items-center justify-center transition-all shadow-sm"
+                title="Unduh Excel"
+              >
+                <FileSpreadsheet className="w-5 h-5 text-white" />
+              </button>
+              <button
+                onClick={handleExportImage}
+                disabled={exportingImg}
+                className="w-10 h-10 bg-black border border-black/5 text-blue-600 rounded-md flex items-center justify-center transition-all shadow-sm disabled:opacity-50"
+                title="Unduh Gambar"
+              >
+                <ImageIcon className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Filters & Legend */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-6 border-t border-black/5">
+          {/* Sorting */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-(--color-muted) uppercase tracking-[0.2em] ml-1">
+              Urutkan Berdasarkan
+            </p>
+            <div className="flex items-center gap-2 p-1 bg-[#F8F8FA] rounded-md border border-black/5 w-fit">
+              {[
+                { id: "name", label: "Nama", icon: ArrowDownAZ },
+                {
+                  id: "position",
+                  label: "Jabatan",
+                  icon: ArrowDownWideNarrow,
+                },
+                { id: "total", label: "Total", icon: SortAsc },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() =>
+                    setSortConfig({
+                      key: s.id as any,
+                      direction:
+                        sortConfig.key === s.id &&
+                        sortConfig.direction === "asc"
+                          ? "desc"
+                          : "asc",
+                    })
+                  }
+                  className={cn(
+                    "h-9 px-4 rounded-md flex items-center gap-2 transition-all text-[10px] font-black uppercase tracking-wider",
+                    sortConfig.key === s.id
+                      ? "bg-black text-white shadow-md"
+                      : "hover:bg-white text-(--color-muted)/60",
+                  )}
+                >
+                  <s.icon
+                    className={cn(
+                      "w-3.5 h-3.5",
+                      sortConfig.key === s.id &&
+                        sortConfig.direction === "desc" &&
+                        "rotate-180",
+                    )}
+                  />
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="space-y-3 lg:text-right">
+            <p className="text-xs font-semibold text-(--color-muted) uppercase tracking-[0.2em] mr-1">
+              Indikator Shift
+            </p>
+            <div className="flex flex-wrap items-center lg:justify-end gap-x-6 gap-y-2">
+              {shiftTypes.map((s, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: s.color }}
+                  />
+                  <span className="text-xs font-black uppercase tracking-tight text-(--color-fg)">
+                    {s.name} <span className="opacity-40">({s.code})</span>
                   </span>
                 </div>
+              ))}
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                <span className="text-xs font-black uppercase text-red-500">
+                  Konflik
+                </span>
               </div>
             </div>
           </div>
@@ -1430,53 +1490,57 @@ export default function SchedulePage() {
                     );
                   })}
                 </tbody>
-                <tfoot>
-                  <tr className="bg-black text-(--color-primary) border-t-2 border-(--color-primary)/20">
-                    <td className="sticky left-0 z-30 bg-black px-3 md:px-5 py-4 border-r border-white/10 w-[120px] md:w-40 min-w-[120px] md:min-w-[160px]">
-                      <div className="flex items-center gap-1.5 md:gap-3">
-                        <Wallet className="w-3.5 h-3.5 md:w-4 md:h-4 text-(--color-primary)" />
-                        <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest leading-tight">
-                          Labor Cost
-                        </span>
-                      </div>
-                    </td>
-                    {days.map((date) => {
-                      const totalCost = schedules
-                        .filter((s) => s.date === date)
-                        .reduce(
-                          (sum, s) =>
-                            sum + (shiftMap.get(s.shiftTypeId)?.baseRate || 0),
-                          0,
-                        );
+                {authConfig?.tier === "pro" && (
+                  <tfoot>
+                    <tr className="bg-black text-(--color-primary) border-t-2 border-(--color-primary)/20">
+                      <td className="sticky left-0 z-30 bg-black px-3 md:px-5 py-4 border-r border-white/10 w-[120px] md:w-40 min-w-[120px] md:min-w-[160px]">
+                        <div className="flex items-center gap-1.5 md:gap-3">
+                          <Wallet className="w-3.5 h-3.5 md:w-4 md:h-4 text-(--color-primary)" />
+                          <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest leading-tight">
+                            Labor Cost
+                          </span>
+                        </div>
+                      </td>
+                      {days.map((date) => {
+                        const totalCost = schedules
+                          .filter((s) => s.date === date)
+                          .reduce(
+                            (sum, s) =>
+                              sum +
+                              (shiftMap.get(s.shiftTypeId)?.baseRate || 0),
+                            0,
+                          );
 
-                      return (
-                        <td
-                          key={date}
-                          className="px-2 py-4 text-center font-mono text-[10px] font-black border-r border-white/10"
-                        >
-                          {totalCost > 0
-                            ? `Rp ${totalCost.toLocaleString("id-ID")}`
-                            : "-"}
-                        </td>
-                      );
-                    })}
-                    <td className="bg-black/80 px-4 py-4 text-center font-mono text-xs font-black">
-                      {(() => {
-                        const grandTotal = schedules.reduce(
-                          (sum, s) =>
-                            sum + (shiftMap.get(s.shiftTypeId)?.baseRate || 0),
-                          0,
+                        return (
+                          <td
+                            key={date}
+                            className="px-2 py-4 text-center font-mono text-[10px] font-black border-r border-white/10"
+                          >
+                            {totalCost > 0
+                              ? `Rp ${totalCost.toLocaleString("id-ID")}`
+                              : "-"}
+                          </td>
                         );
-                        return `Rp ${grandTotal.toLocaleString("id-ID")}`;
-                      })()}
-                    </td>
-                  </tr>
-                </tfoot>
+                      })}
+                      <td className="bg-black/80 px-4 py-4 text-center font-mono text-xs font-black">
+                        {(() => {
+                          const grandTotal = schedules.reduce(
+                            (sum, s) =>
+                              sum +
+                              (shiftMap.get(s.shiftTypeId)?.baseRate || 0),
+                            0,
+                          );
+                          return `Rp ${grandTotal.toLocaleString("id-ID")}`;
+                        })()}
+                      </td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
           )}
         </div>
-      </div>{" "}
+      </div>
       {/* End export-container */}
       {/* Modals */}
       {assignModal && (
@@ -1500,6 +1564,7 @@ export default function SchedulePage() {
         <RollingModal
           employees={employees}
           shiftTypes={shiftTypes}
+          tier={authConfig?.tier}
           onApply={handleRollingApply}
           onClose={() => setRollingModal(false)}
         />

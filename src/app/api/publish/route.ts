@@ -17,6 +17,23 @@ export async function POST(req: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // 1. Verify license tier (Security Audit Fix)
+    const { data: license, error: licenseError } = await supabase
+      .from("licenses")
+      .select("tier")
+      .eq("hardware_id", workspaceId)
+      .maybeSingle();
+
+    if (licenseError || !license || license.tier !== "pro") {
+      return NextResponse.json(
+        {
+          message:
+            "Akses ditolak. Fitur Portal Publik hanya tersedia untuk paket Professional.",
+        },
+        { status: 403 },
+      );
+    }
+
     // Upsert the share data
     // We use workspace_id + month + year as a unique constraint to avoid duplicates per month
     // But since the primary key is ID (UUID), we might want to check for existing one first

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getDB } from "@/lib/db/db";
-import type { ShiftType } from "@/types";
+import type { ShiftType, AuthConfig } from "@/types";
 import {
   Plus,
   Pencil,
@@ -33,10 +33,12 @@ function ShiftModal({
   shift,
   onSave,
   onClose,
+  tier = "starter",
 }: {
   shift?: ShiftType;
   onSave: (data: Omit<ShiftType, "id">) => Promise<void>;
   onClose: () => void;
+  tier?: "starter" | "personal" | "pro";
 }) {
   const [name, setName] = useState(shift?.name ?? "");
   const [code, setCode] = useState(shift?.code ?? "");
@@ -164,9 +166,16 @@ function ShiftModal({
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1.5">
-              Tarif Dasar per Shift (Labor Cost)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-medium">
+                Tarif Dasar per Shift (Labor Cost)
+              </label>
+              {tier !== "pro" && (
+                <span className="text-[10px] bg-black text-[#D0F500] px-1.5 py-0.5 rounded font-black uppercase tracking-widest">
+                  Pro
+                </span>
+              )}
+            </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-(--color-muted)">
                 <span className="text-xs font-bold">Rp</span>
@@ -174,9 +183,21 @@ function ShiftModal({
               <input
                 type="number"
                 value={baseRate}
-                onChange={(e) => setBaseRate(e.target.value)}
-                placeholder="0"
-                className="input-field pl-10 font-mono tracking-tight"
+                onChange={(e) => {
+                  if (tier !== "pro") {
+                    toast.error(
+                      "Fitur Labor Cost eksklusif untuk paket Professional.",
+                    );
+                    return;
+                  }
+                  setBaseRate(e.target.value);
+                }}
+                disabled={tier !== "pro"}
+                placeholder={tier === "pro" ? "0" : "Hanya untuk Pro"}
+                className={cn(
+                  "input-field pl-10 font-mono tracking-tight",
+                  tier !== "pro" && "opacity-50 cursor-not-allowed",
+                )}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-(--color-muted)/30">
                 <Wallet className="w-4 h-4" />
@@ -256,17 +277,22 @@ export default function ShiftsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ShiftType | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<ShiftType | undefined>();
+  const [authConfig, setAuthConfig] = useState<AuthConfig | undefined>();
 
-  const loadShifts = useCallback(async () => {
+  const loadData = useCallback(async () => {
     const db = getDB();
-    const data = await db.getAllShiftTypes();
-    setShiftTypes(data);
+    const [shifts, auth] = await Promise.all([
+      db.getAllShiftTypes(),
+      db.getAuthConfig(),
+    ]);
+    setShiftTypes(shifts);
+    setAuthConfig(auth);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    loadShifts();
-  }, [loadShifts]);
+    loadData();
+  }, [loadData]);
 
   const handleSave = async (data: Omit<ShiftType, "id">) => {
     const db = getDB();
@@ -279,7 +305,7 @@ export default function ShiftsPage() {
     }
     setModalOpen(false);
     setEditTarget(undefined);
-    await loadShifts();
+    await loadData();
   };
 
   const handleDelete = async (shift: ShiftType) => {
@@ -292,7 +318,7 @@ export default function ShiftsPage() {
     await db.deleteShiftType(deleteTarget.id!);
     toast.success(`Shift "${deleteTarget.name}" telah dihapus.`);
     setDeleteTarget(undefined);
-    await loadShifts();
+    await loadData();
   };
 
   const getShiftIcon = (shift: ShiftType) => {
@@ -499,7 +525,7 @@ export default function ShiftsPage() {
                   </div>
                 )}
 
-                {shift.baseRate && (
+                {shift.baseRate && authConfig?.tier === "pro" && (
                   <div className="mt-4 pt-4 border-t border-black/5 flex items-center justify-between">
                     <span className="text-[10px] font-black text-(--color-muted) uppercase tracking-widest">
                       Labor Cost
@@ -526,6 +552,7 @@ export default function ShiftsPage() {
         <ShiftModal
           shift={editTarget}
           onSave={handleSave}
+          tier={authConfig?.tier}
           onClose={() => {
             setModalOpen(false);
             setEditTarget(undefined);

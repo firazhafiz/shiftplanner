@@ -7,6 +7,7 @@ import { toPng } from "html-to-image";
 export async function exportScheduleAsImage(
   elementId: string,
   filename = "jadwal.png",
+  tier: "starter" | "personal" | "pro" = "personal",
 ): Promise<void> {
   const el = document.getElementById(elementId);
   if (!el) throw new Error(`Element #${elementId} not found`);
@@ -19,6 +20,28 @@ export async function exportScheduleAsImage(
     width: el.style.width,
     position: el.style.position,
   };
+
+  // Watermark Injection for Starter Tier
+  let watermark: HTMLElement | null = null;
+  if (tier === "starter") {
+    watermark = document.createElement("div");
+    watermark.innerText = "Dibuat dengan SHIFTPLANNER (Starter — Gratis)";
+    watermark.style.position = "absolute";
+    watermark.style.bottom = "40px";
+    watermark.style.right = "40px";
+    watermark.style.background = "black";
+    watermark.style.color = "#D0F500";
+    watermark.style.padding = "10px 20px";
+    watermark.style.fontSize = "14px";
+    watermark.style.fontWeight = "900";
+    watermark.style.borderRadius = "8px";
+    watermark.style.zIndex = "999";
+    watermark.style.letterSpacing = "0.1em";
+    watermark.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
+    watermark.style.pointerEvents = "none";
+    el.classList.add("relative"); // Ensure container is relative
+    el.appendChild(watermark);
+  }
 
   // Force the container to show everything
   el.style.overflow = "visible";
@@ -86,6 +109,10 @@ export async function exportScheduleAsImage(
     noExportEls.forEach((item) => {
       item.style.display = "";
     });
+
+    if (watermark && watermark.parentNode) {
+      watermark.parentNode.removeChild(watermark);
+    }
 
     stickyOriginals.forEach(({ el: stickyEl, position, left, top, zIndex }) => {
       stickyEl.style.position = position;

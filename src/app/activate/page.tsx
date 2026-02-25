@@ -62,6 +62,8 @@ export default function ActivatePage() {
             hardwareId,
             activatedAt: new Date(),
             isActive: true,
+            tier: data.tier || "personal",
+            maxDevices: data.max_devices || 1,
           });
           console.log("Local DB save successful.");
 

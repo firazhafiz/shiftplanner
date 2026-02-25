@@ -13,6 +13,7 @@ export function exportToExcel(
   year: number,
   month: number,
   businessName?: string,
+  tier: "starter" | "personal" | "pro" = "personal",
 ): void {
   const days = getDaysOfMonth(year, month);
   const shiftMap = new Map(shiftTypes.map((s) => [s.id!, s]));
@@ -31,6 +32,10 @@ export function exportToExcel(
 
   // Start with Optional Business Name and Month Title
   const rows: (string | number)[][] = [];
+
+  if (tier === "starter") {
+    rows.push(["CREATED BY SHIFTPLANNER (FREE EDITION)"]);
+  }
 
   if (businessName) {
     rows.push([businessName.toUpperCase()]);

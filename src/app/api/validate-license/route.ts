@@ -48,23 +48,30 @@ export async function POST(req: NextRequest) {
       hardwareId,
     );
 
-    // [DEV BYPASS] Allow testing keys in both dev and production for initial testing
-    const isTestingKey = [
-      "TES-LICENSE-123",
-      "TEST-LICENSE-123",
-      "TESTING-123",
-    ].includes(normalizedKey);
+    // [DEV BYPASS] Dedicated testing keys for different tiers
+    const testingKeys: Record<string, { tier: string; max_devices: number }> = {
+      "TEST-STARTER-123": { tier: "starter", max_devices: 1 },
+      "TEST-PERSONAL-123": { tier: "personal", max_devices: 1 },
+      "TEST-PRO-123": { tier: "pro", max_devices: 3 },
+      // Legacy generic keys (default to pro)
+      "TES-LICENSE-123": { tier: "pro", max_devices: 3 },
+      "TEST-LICENSE-123": { tier: "pro", max_devices: 3 },
+      "TESTING-123": { tier: "pro", max_devices: 3 },
+    };
 
-    if (isTestingKey) {
+    if (testingKeys[normalizedKey]) {
+      const config = testingKeys[normalizedKey];
       console.log(
-        "Testing Key detected, allowing activation:",
+        `Testing Key (${config.tier}) detected, allowing activation:`,
         normalizedKey,
         "HWID:",
         hardwareId,
       );
       return NextResponse.json({
         valid: true,
-        message: "Aktivasi berhasil menggunakan kunci testing!",
+        message: `Aktivasi berhasil menggunakan kunci testing (${config.tier.toUpperCase()})!`,
+        tier: config.tier,
+        max_devices: config.max_devices,
       });
     }
 
@@ -93,12 +100,22 @@ export async function POST(req: NextRequest) {
 
     // Already used?
     if (license.is_used) {
+      // If it's the same device, allow re-activation (recovery)
       if (license.hardware_id === hardwareId) {
         return NextResponse.json({
           valid: true,
           message: "Lisensi sudah aktif di perangkat ini. Silakan masuk.",
+          tier: license.tier || "personal",
+          max_devices: license.max_devices || 1,
         });
       }
+
+      // Check for multi-device seat limit (if implemented in DB)
+      // For now, if is_used is true but HWID differs, we check hardware_id list or just block
+      // Based on current schema, we only store one hardware_id.
+      // To support multiple devices, we'd need a separate table for bindings.
+      // FOR NOW: If is_used is true and HWID is different, block it unless we add binding support.
+
       return NextResponse.json(
         { valid: false, message: "Lisensi sudah digunakan di perangkat lain" },
         { status: 200 },
@@ -117,7 +134,12 @@ export async function POST(req: NextRequest) {
         .eq("id", license.id);
     }
 
-    return NextResponse.json({ valid: true, message: "Aktivasi berhasil!" });
+    return NextResponse.json({
+      valid: true,
+      message: "Aktivasi berhasil!",
+      tier: license.tier || "personal",
+      max_devices: license.max_devices || 1,
+    });
   } catch (error: any) {
     console.error("License validation error:", error);
     return NextResponse.json(

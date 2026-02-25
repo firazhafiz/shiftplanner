@@ -14,11 +14,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { AuthConfig } from "@/types";
 
 export default function SetupPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<TemplateType>("cafe");
   const [isApplying, setIsApplying] = useState(false);
+  const [authConfig, setAuthConfig] = useState<AuthConfig | undefined>();
 
   useEffect(() => {
     async function checkState() {
@@ -31,6 +33,14 @@ export default function SetupPage() {
 
       // If business profile exists and setup is complete, redirect to dashboard
       const profile = await db.getBusinessProfile();
+      const auth = await db.getAuthConfig();
+      setAuthConfig(auth);
+
+      // Default to custom if not pro
+      if (auth?.tier !== "pro") {
+        setSelected("custom");
+      }
+
       if (profile && profile.isSetupComplete) {
         router.push("/dashboard");
       }
@@ -39,6 +49,13 @@ export default function SetupPage() {
   }, [router]);
 
   const handleSetup = async () => {
+    if (
+      (selected === "cafe" || selected === "retail") &&
+      authConfig?.tier !== "pro"
+    ) {
+      toast.error("Template ini eksklusif untuk paket Professional.");
+      return;
+    }
     setIsApplying(true);
     try {
       await applyTemplate(selected);
@@ -80,19 +97,34 @@ export default function SetupPage() {
             const template = TEMPLATES[key];
             const Icon = icons[key];
             const isSelected = selected === key;
+            const isRestricted = key !== "custom" && authConfig?.tier !== "pro";
 
             return (
               <div
                 key={key}
-                onClick={() => setSelected(key)}
+                onClick={() => {
+                  if (isRestricted) {
+                    toast.error(
+                      "Template ini eksklusif untuk paket Professional.",
+                    );
+                    return;
+                  }
+                  setSelected(key);
+                }}
                 className={cn(
                   "relative p-8 rounded-3xl border-2 transition-all cursor-pointer group",
                   isSelected
                     ? "bg-white border-[#D0F500] shadow-2xl shadow-[#D0F500]/20 scale-105"
                     : "bg-white/50 border-black/5 hover:border-black/10 hover:bg-white",
+                  isRestricted && "opacity-80 grayscale-[0.5]",
                 )}
               >
-                {isSelected && (
+                {isRestricted && (
+                  <div className="absolute top-4 right-4 bg-black text-[#D0F500] text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md">
+                    Pro Only
+                  </div>
+                )}
+                {isSelected && !isRestricted && (
                   <div className="absolute top-4 right-4 text-[#D0F500]">
                     <CheckCircle2 className="w-6 h-6 fill-black" />
                   </div>

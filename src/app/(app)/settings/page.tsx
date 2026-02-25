@@ -196,6 +196,8 @@ export default function SettingsPage() {
     toast.success("Nama bisnis diperbarui!");
   };
 
+  const isPro = authConfig?.tier === "pro";
+
   const presetColors = [
     "#D0F500", // Original Neon
     "#3B82F6", // Blue
@@ -250,9 +252,14 @@ export default function SettingsPage() {
                 </div>
               </div>
               {authConfig?.isActive && (
-                <div className="flex items-center gap-2 bg-(--color-primary) text-black text-[10px] font-black px-4 py-2 rounded-md  uppercase tracking-tighter">
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  Aktif
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2 bg-(--color-primary) text-black text-[10px] font-black px-4 py-2 rounded-md uppercase tracking-tighter">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Aktif
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-(--color-muted) opacity-50">
+                    Paket {authConfig.tier}
+                  </span>
                 </div>
               )}
             </div>
@@ -311,18 +318,37 @@ export default function SettingsPage() {
                 <h2 className="font-black text-xl text-black tracking-tight leading-none">
                   Profil Bisnis
                 </h2>
-                <p className="text-[10px] text-(--color-muted) font-black uppercase mt-2 tracking-widest leading-none">
-                  Identitas Workspace
-                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <p className="text-[10px] text-(--color-muted) font-black uppercase tracking-widest leading-none">
+                    Identitas Workspace
+                  </p>
+                  {!isPro && (
+                    <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase">
+                      <Shield className="w-2 h-2" /> Pro Only
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="space-y-6 relative z-10">
-              <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl bg-[#F8F8FA] border border-black/5">
+              <div
+                className={cn(
+                  "flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl bg-[#F8F8FA] border border-black/5 relative transition-all",
+                  !isPro && "opacity-50 grayscale pointer-events-none",
+                )}
+              >
+                {!isPro && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/10 backdrop-blur-[1px] rounded-2xl">
+                    <div className="bg-black text-white text-[10px] font-black px-4 py-2 rounded-full flex items-center gap-2 shadow-xl">
+                      <Palette className="w-3.5 h-3.5" /> UPGRADE KE PRO
+                    </div>
+                  </div>
+                )}
                 <div
                   className="w-24 h-24 rounded-2xl bg-white border border-black/10 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer hover:border-(--color-primary) transition-all group/logo"
                   onClick={() =>
-                    document.getElementById("logo-upload")?.click()
+                    isPro && document.getElementById("logo-upload")?.click()
                   }
                 >
                   {businessProfile.logo ? (
@@ -345,6 +371,7 @@ export default function SettingsPage() {
                     accept="image/*"
                     className="hidden"
                     onChange={handleLogoUpload}
+                    disabled={!isPro}
                   />
                 </div>
                 <div className="flex-1 space-y-4 w-full">
@@ -359,10 +386,12 @@ export default function SettingsPage() {
                         onChange={(e) => setTempProfileName(e.target.value)}
                         className="flex-1 bg-white border border-black/10 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-(--color-primary) outline-none"
                         placeholder="Nama Toko Anda"
+                        disabled={!isPro}
                       />
                       <button
                         onClick={saveProfileName}
-                        className="bg-black text-white px-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-(--color-primary) hover:text-black transition-all"
+                        disabled={!isPro}
+                        className="bg-black text-white px-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-(--color-primary) hover:text-black transition-all disabled:opacity-50"
                       >
                         Simpan
                       </button>
@@ -401,14 +430,33 @@ export default function SettingsPage() {
                 <h2 className="font-black text-xl text-black tracking-tight leading-none">
                   Personalisasi Tema
                 </h2>
-                <p className="text-[10px] text-(--color-muted) font-black uppercase mt-2 tracking-widest leading-none">
-                  Aura Kontrol Panel
-                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <p className="text-[10px] text-(--color-muted) font-black uppercase tracking-widest leading-none">
+                    Aura Kontrol Panel
+                  </p>
+                  {!isPro && (
+                    <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase">
+                      <Shield className="w-2 h-2" /> Pro Only
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="space-y-6 relative z-10">
-              <div className="p-6 rounded-2xl bg-[#F8F8FA] border border-black/5">
+              <div
+                className={cn(
+                  "p-6 rounded-2xl bg-[#F8F8FA] border border-black/5 relative transition-all",
+                  !isPro && "opacity-50 grayscale pointer-events-none",
+                )}
+              >
+                {!isPro && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/10 backdrop-blur-[1px] rounded-2xl">
+                    <div className="bg-black text-white text-[10px] font-black px-4 py-2 rounded-full flex items-center gap-2 shadow-xl">
+                      <Shield className="w-3.5 h-3.5" /> AKTIFKAN FITUR PRO
+                    </div>
+                  </div>
+                )}
                 <p className="text-[10px] font-black text-(--color-muted)/40 uppercase mb-4 tracking-widest">
                   Warna Utama (Primary Color)
                 </p>
@@ -416,6 +464,7 @@ export default function SettingsPage() {
                   {presetColors.map((color) => (
                     <button
                       key={color}
+                      disabled={!isPro}
                       onClick={() =>
                         saveSettings({ ...appSettings, primaryColor: color })
                       }
@@ -431,6 +480,7 @@ export default function SettingsPage() {
                   <div className="w-10 h-10 rounded-full bg-white border border-black/10 flex items-center justify-center cursor-pointer overflow-hidden relative group/color">
                     <input
                       type="color"
+                      disabled={!isPro}
                       value={appSettings.primaryColor}
                       onChange={(e) =>
                         saveSettings({
