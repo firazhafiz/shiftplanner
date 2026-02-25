@@ -2,6 +2,9 @@
 
 import { Check, Zap, Crown, Building2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { getHardwareId } from "@/lib/fingerprint";
+import { getDB } from "@/lib/db/db";
 
 const tiers = [
   {
@@ -18,6 +21,7 @@ const tiers = [
       "Penyimpanan Lokal Aman",
     ],
     cta: "Mulai Gratis Sekarang",
+    href: "/setup",
     highlight: false,
   },
   {
@@ -33,7 +37,8 @@ const tiers = [
       "Export Gambar & Excel (No Watermark)",
       "Semua Fitur pada Starter",
     ],
-    cta: "Pilih UMKM Mandiri",
+    cta: "Beli Rp 99.000",
+    href: "/payment/checkout?tier=personal",
     highlight: false,
   },
   {
@@ -50,13 +55,37 @@ const tiers = [
       "Shift Templates Library Lengkap",
       "Semua Fitur pada Personal",
     ],
-    cta: "Mulai Kelola Profesional",
+    cta: "Beli Rp 349.000",
     highlight: true,
     badge: "Efisiensi Maksimal",
+    href: "/payment/checkout?tier=pro",
   },
 ];
 
 export default function Pricing() {
+  const router = useRouter();
+
+  const handleStarterClick = async () => {
+    try {
+      const db = getDB();
+      const activated = await db.isActivated();
+      if (!activated) {
+        const hardwareId = await getHardwareId();
+        await db.saveActivation({
+          licenseKey: "STARTER-FREE",
+          hardwareId,
+          activatedAt: new Date(),
+          isActive: true,
+          tier: "starter",
+          maxDevices: 1,
+        });
+      }
+      router.push("/setup");
+    } catch {
+      router.push("/setup");
+    }
+  };
+
   return (
     <section id="pricing" className="py-24 bg-white relative overflow-hidden">
       {/* Background Elements */}
@@ -166,8 +195,15 @@ export default function Pricing() {
                 </ul>
 
                 <button
+                  onClick={() => {
+                    if (tier.name === "Starter") {
+                      handleStarterClick();
+                    } else {
+                      router.push(tier.href!);
+                    }
+                  }}
                   className={cn(
-                    "w-full py-4 rounded-md font-black text-sm uppercase tracking-widest transition-all",
+                    "w-full py-4 rounded-md font-black text-sm uppercase tracking-widest transition-all cursor-pointer",
                     tier.highlight
                       ? "bg-(--color-primary) text-black hover:scale-105 active:scale-95 shadow-xl shadow-(--color-primary)/20"
                       : "bg-black text-white hover:bg-(--color-primary) hover:text-black hover:shadow-xl active:scale-95",

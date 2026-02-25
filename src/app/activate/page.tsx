@@ -280,14 +280,54 @@ export default function ActivatePage() {
                 <p className="text-sm font-bold leading-relaxed">{message}</p>
               </div>
             )}
+
+            {/* Divider */}
+            <div className="mt-8 flex items-center gap-4">
+              <div className="flex-1 h-px bg-black/5" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-black/20">
+                atau
+              </span>
+              <div className="flex-1 h-px bg-black/5" />
+            </div>
+
+            {/* Try Free (Starter) Button */}
+            <button
+              onClick={async () => {
+                try {
+                  const db = getDB();
+                  const hardwareId = await getHardwareId();
+                  await db.saveActivation({
+                    licenseKey: "STARTER-FREE",
+                    hardwareId,
+                    activatedAt: new Date(),
+                    isActive: true,
+                    tier: "starter",
+                    maxDevices: 1,
+                  });
+                  window.location.href = "/setup";
+                } catch {
+                  window.location.href = "/setup";
+                }
+              }}
+              className="mt-4 w-full h-14 bg-black/5 text-black rounded-md font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-(--color-primary) hover:text-black transition-all cursor-pointer hover:shadow-lg active:scale-[0.98]"
+            >
+              ⚡ Coba Gratis (Starter)
+            </button>
+            <p className="mt-2 text-xs text-center text-black/30 font-medium">
+              Mulai dengan paket gratis — tanpa kode lisensi
+            </p>
           </div>
 
-          <div className="mt-8 flex items-center justify-center gap-6">
-            <div className="relative z-10">
-              <p className="text-xs text-black font-light tracking-widest uppercase">
-                ShiftPlanner Business Suite v0.1.0
-              </p>
-            </div>
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <button
+              onClick={() => router.push("/payment/retrieve")}
+              className="text-xs font-bold text-black/40 hover:text-black underline underline-offset-4 cursor-pointer transition-colors"
+            >
+              Sudah beli? Ambil ulang kode lisensi →
+            </button>
+            <p className="text-xs text-black font-light tracking-widest uppercase">
+              ShiftPlanner Business Suite v0.1.0
+            </p>
           </div>
         </div>
       </div>
